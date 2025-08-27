@@ -67,6 +67,16 @@ export default function ConversionCard({
         const data = await response.json();
 
         if (data.rate) {
+          // Log the rate/quote response
+          console.log("💱 Rate/Quote Response:", {
+            from: fromCurrency,
+            to: toCurrency,
+            amount: amount,
+            rate: data.rate,
+            rateDetails: data,
+            timestamp: new Date().toISOString(),
+          });
+
           setRate(data.rate);
           setRateDetails(data);
           setRateError(null);

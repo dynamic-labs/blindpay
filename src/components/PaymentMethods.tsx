@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useKYCStatus } from "@/lib/hooks/useKYCStatus";
 import { AccountType, AccountClass, PaymentMethodType } from "@/types/blindpay";
+import { useDynamicContext } from "@/lib/dynamic";
 
 interface BankAccount {
   id: string;
@@ -31,6 +32,7 @@ export default function PaymentMethods({
   onUpdate?: () => void;
 }) {
   const { receiverId } = useKYCStatus();
+  const { primaryWallet } = useDynamicContext();
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
   const [blockchainWallets, setBlockchainWallets] = useState<
     BlockchainWallet[]
@@ -38,6 +40,9 @@ export default function PaymentMethods({
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"bank" | "blockchain">("bank");
   const [showAddForm, setShowAddForm] = useState(false);
+  const [walletAdditionMethod, setWalletAdditionMethod] = useState<
+    "secure" | "direct"
+  >("secure");
 
   const [bankForm, setBankForm] = useState({
     type: PaymentMethodType.ACH,
@@ -56,7 +61,7 @@ export default function PaymentMethods({
 
   const [walletForm, setWalletForm] = useState({
     name: "",
-    network: "polygon",
+    network: "base_sepolia",
     address: "",
     is_account_abstraction: false,
   });
@@ -95,6 +100,7 @@ export default function PaymentMethods({
       const walletResponse = await fetch(
         `/api/payment-methods/blockchain-wallets?receiverId=${receiverId}`
       );
+
       if (walletResponse.ok) {
         const walletData = await walletResponse.json();
         setBlockchainWallets(walletData.blockchainWallets || []);
@@ -163,13 +169,68 @@ export default function PaymentMethods({
 
     setIsLoading(true);
     try {
+      let requestBody: {
+        receiverId: string;
+        name: string;
+        network: string;
+        is_account_abstraction: boolean;
+        address?: string;
+        signature_tx_hash?: string;
+      };
+
+      if (walletAdditionMethod === "secure") {
+        // Secure method: Get message to sign, sign it, then add wallet
+        if (!primaryWallet) {
+          alert("Please connect your wallet first");
+          return;
+        }
+
+        // Step 1: Get the message to sign from BlindPay
+        const messageResponse = await fetch(
+          `/api/payment-methods/blockchain-wallets/sign-message?receiverId=${receiverId}`
+        );
+
+        if (!messageResponse.ok) {
+          const error = await messageResponse.json();
+          alert(`Failed to get sign message: ${error.error}`);
+          return;
+        }
+
+        const messageData = await messageResponse.json();
+        const messageToSign = messageData.message;
+
+        // Step 2: Sign the message using Dynamic wallet
+        const signature = await primaryWallet.signMessage(messageToSign);
+
+        // Step 3: Create request body with signature and address
+        requestBody = {
+          receiverId,
+          name: walletForm.name,
+          network: walletForm.network,
+          is_account_abstraction: walletForm.is_account_abstraction,
+          address: primaryWallet.address,
+          signature_tx_hash: signature,
+        };
+      } else {
+        // Direct method: Use the address directly
+        if (!walletForm.address) {
+          alert("Wallet address is required for direct addition");
+          return;
+        }
+
+        requestBody = {
+          receiverId,
+          name: walletForm.name,
+          network: walletForm.network,
+          is_account_abstraction: walletForm.is_account_abstraction,
+          address: walletForm.address,
+        };
+      }
+
       const response = await fetch("/api/payment-methods/blockchain-wallets", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          receiverId,
-          ...walletForm,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (response.ok) {
@@ -178,7 +239,7 @@ export default function PaymentMethods({
         setShowAddForm(false);
         setWalletForm({
           name: "",
-          network: "polygon",
+          network: "base_sepolia",
           address: "",
           is_account_abstraction: false,
         });
@@ -186,10 +247,14 @@ export default function PaymentMethods({
         onUpdate?.();
       } else {
         const error = await response.json();
-        alert(`Failed to add blockchain wallet: ${error.message}`);
+        alert(`Failed to add blockchain wallet: ${error.error}`);
       }
-    } catch {
-      alert("Failed to add blockchain wallet");
+    } catch (error) {
+      alert(
+        `Failed to add blockchain wallet: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     } finally {
       setIsLoading(false);
     }
@@ -373,7 +438,10 @@ export default function PaymentMethods({
                     required
                     value={bankForm.type}
                     onChange={(e) =>
-                      setBankForm((prev) => ({ ...prev, type: e.target.value }))
+                      setBankForm((prev) => ({
+                        ...prev,
+                        type: e.target.value as PaymentMethodType,
+                      }))
                     }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
@@ -436,7 +504,7 @@ export default function PaymentMethods({
                       onChange={(e) =>
                         setBankForm((prev) => ({
                           ...prev,
-                          account_type: e.target.value,
+                          account_type: e.target.value as AccountType,
                         }))
                       }
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -455,7 +523,7 @@ export default function PaymentMethods({
                       onChange={(e) =>
                         setBankForm((prev) => ({
                           ...prev,
-                          account_class: e.target.value,
+                          account_class: e.target.value as AccountClass,
                         }))
                       }
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -599,6 +667,47 @@ export default function PaymentMethods({
               </form>
             ) : (
               <form onSubmit={handleAddBlockchainWallet} className="space-y-4">
+                {/* Wallet Addition Method Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Addition Method *
+                  </label>
+                  <div className="space-y-2">
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        value="secure"
+                        checked={walletAdditionMethod === "secure"}
+                        onChange={(e) =>
+                          setWalletAdditionMethod(
+                            e.target.value as "secure" | "direct"
+                          )
+                        }
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                      />
+                      <span className="ml-2 text-sm text-gray-700">
+                        🔐 Secure (Sign Message) - Recommended
+                      </span>
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        value="direct"
+                        checked={walletAdditionMethod === "direct"}
+                        onChange={(e) =>
+                          setWalletAdditionMethod(
+                            e.target.value as "secure" | "direct"
+                          )
+                        }
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                      />
+                      <span className="ml-2 text-sm text-gray-700">
+                        📝 Direct (Enter Address)
+                      </span>
+                    </label>
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Wallet Name *
@@ -633,6 +742,7 @@ export default function PaymentMethods({
                     }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
+                    <option value="base_sepolia">Base Sepolia</option>
                     <option value="polygon">Polygon</option>
                     <option value="ethereum">Ethereum</option>
                     <option value="arbitrum">Arbitrum</option>
@@ -641,24 +751,43 @@ export default function PaymentMethods({
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Wallet Address *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={walletForm.address}
-                    onChange={(e) =>
-                      setWalletForm((prev) => ({
-                        ...prev,
-                        address: e.target.value,
-                      }))
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="0x..."
-                  />
-                </div>
+                {walletAdditionMethod === "direct" && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Wallet Address *
+                    </label>
+                    <input
+                      type="text"
+                      required={walletAdditionMethod === "direct"}
+                      value={walletForm.address}
+                      onChange={(e) =>
+                        setWalletForm((prev) => ({
+                          ...prev,
+                          address: e.target.value,
+                        }))
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="0x..."
+                    />
+                  </div>
+                )}
+
+                {walletAdditionMethod === "secure" && (
+                  <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <p className="text-sm text-blue-800">
+                      🔐 <strong>Secure Method:</strong> You&apos;ll be prompted
+                      to sign a message with your connected wallet. This method
+                      doesn&apos;t require you to enter your wallet address and
+                      is more secure.
+                    </p>
+                    {!primaryWallet && (
+                      <p className="text-sm text-red-600 mt-2">
+                        ⚠️ Please connect your wallet first to use the secure
+                        method.
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 <div className="flex items-center">
                   <input
@@ -691,10 +820,17 @@ export default function PaymentMethods({
                   </button>
                   <button
                     type="submit"
-                    disabled={isLoading}
+                    disabled={
+                      isLoading ||
+                      (walletAdditionMethod === "secure" && !primaryWallet)
+                    }
                     className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
                   >
-                    {isLoading ? "Adding..." : "Add Wallet"}
+                    {isLoading
+                      ? "Adding..."
+                      : walletAdditionMethod === "secure"
+                      ? "Sign & Add Wallet"
+                      : "Add Wallet"}
                   </button>
                 </div>
               </form>

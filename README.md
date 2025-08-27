@@ -64,26 +64,29 @@ A Next.js application that enables seamless conversion between stablecoins and f
 ### How It Works
 
 1. **Wallet Connection**: Users connect their wallet using Dynamic Labs
-2. **KYC Verification**: Users complete a KYC form with personal information
-3. **Receiver Creation**: BlindPay creates a receiver with the provided KYC data
+2. **KYC Verification**: Users complete KYC verification using BlindPay's secure iframe interface
+3. **Receiver Creation**: BlindPay automatically creates a receiver with the verified KYC data
 4. **Metadata Storage**: The receiver ID and banking ID are stored in Dynamic user metadata using the `useUserUpdateRequest` hook
 5. **Service Access**: Users can now access BlindPay services using their stored receiver ID
 6. **Data Persistence**: All KYC data persists across sessions and devices via Dynamic's user metadata system
 
 ### KYC Flow
 
-The KYC flow includes:
+The KYC flow is handled entirely through BlindPay's secure iframe interface, which includes:
 
 - Personal information (name, email, date of birth)
-- Contact details (phone number)
-- Address information (street, city, state_province_region, postal code)
-- Document verification (proof of address, ID documents)
+- Contact details (phone number, address)
+- Identity verification (tax ID/SSN)
+- Address verification
+- Document upload capabilities
+- Terms of service acceptance
+- Real-time validation and verification
 
 ### Security Features
 
-- KYC data is sent directly to BlindPay's secure API
+- KYC data is collected and processed entirely through BlindPay's secure iframe
+- No sensitive KYC data passes through your application
 - Receiver IDs are stored in Dynamic's encrypted user metadata
-- No sensitive KYC data is stored locally
 - Environment variables for development defaults
 
 ## 💱 How It Works
@@ -111,7 +114,7 @@ The KYC flow includes:
 
 ### Frontend Components
 
-- **KYCFlow**: Handles KYC verification and receiver creation
+- **BlindPayReceiverInvite**: Integrates BlindPay's KYC verification iframe for seamless receiver creation
 - **ConversionCard**: UI for currency conversion inputs
 - **WalletInfo**: Displays wallet balances and connection status
 - **TransactionHistory**: Shows conversion history
@@ -139,7 +142,7 @@ The KYC flow includes:
 
 ### Customizing KYC Flow
 
-1. Modify the `KYCFlow` component in `src/components/KYCFlow.tsx`
+1. Modify the `BlindPayReceiverInvite` component in `src/components/BlindPayReceiverInvite.tsx`
 2. Update the receivers API route for additional KYC fields
 3. Add validation and error handling as needed
 
@@ -154,8 +157,9 @@ All configuration is done through environment variables to ensure:
 ## 🚨 Important Notes
 
 - **KYC Required**: Users must complete KYC verification before using BlindPay services
+- **Iframe Integration**: KYC verification is handled through BlindPay's secure iframe interface
 - **Receiver ID Storage**: Receiver IDs are automatically stored in Dynamic user metadata
-- **No Local Storage**: Sensitive KYC data is not stored locally
+- **No Local Storage**: Sensitive KYC data is not stored locally and never passes through your application
 - **Development Mode**: Uses placeholder KYC data for development (configure via env vars)
 
 ## 📚 Resources

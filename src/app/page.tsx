@@ -1,7 +1,7 @@
 "use client";
 
 import ConversionCard from "@/components/ConversionCard";
-import KYCFlow from "@/components/KYCFlow";
+import BlindPayReceiverInvite from "@/components/BlindPayReceiverInvite";
 import Nav from "@/components/nav";
 import PaymentMethods from "@/components/PaymentMethods";
 import TransactionHistory from "@/components/TransactionHistory";
@@ -20,6 +20,15 @@ import {
   Network,
 } from "@/types";
 
+interface BlockchainWallet {
+  id: string;
+  name: string;
+  network: string;
+  address: string;
+  is_account_abstraction: boolean;
+  created_at: string;
+}
+
 export default function Main() {
   const { primaryWallet } = useDynamicContext();
   const { isConnected } = useAccount();
@@ -31,10 +40,16 @@ export default function Main() {
   const [hasBankAccounts, setHasBankAccounts] = useState(false);
   const [hasBlockchainWallets, setHasBlockchainWallets] = useState(false);
   const [showBankSelection, setShowBankSelection] = useState(false);
+  const [showWalletSelection, setShowWalletSelection] = useState(false);
   const [availableBankAccounts, setAvailableBankAccounts] = useState<
     BankAccount[]
   >([]);
+  const [availableBlockchainWallets, setAvailableBlockchainWallets] = useState<
+    BlockchainWallet[]
+  >([]);
   const [selectedBankAccountId, setSelectedBankAccountId] =
+    useState<string>("");
+  const [selectedBlockchainWalletId, setSelectedBlockchainWalletId] =
     useState<string>("");
   const [pendingConversionData, setPendingConversionData] =
     useState<ConversionData | null>(null);
@@ -44,11 +59,28 @@ export default function Main() {
     setShowBankSelection(false);
 
     if (pendingConversionData) {
-      await proceedWithConversion(pendingConversionData, bankAccountId);
+      await proceedWithStableToFiatConversion(
+        pendingConversionData,
+        bankAccountId
+      );
     }
   };
 
-  const proceedWithConversion = async (
+  const handleBlockchainWalletSelection = async (
+    blockchainWalletId: string
+  ) => {
+    setSelectedBlockchainWalletId(blockchainWalletId);
+    setShowWalletSelection(false);
+
+    if (pendingConversionData) {
+      await proceedWithFiatToStableConversion(
+        pendingConversionData,
+        blockchainWalletId
+      );
+    }
+  };
+
+  const proceedWithStableToFiatConversion = async (
     data: ConversionData,
     bankAccountId: string
   ) => {
@@ -73,6 +105,14 @@ export default function Main() {
 
       const quoteResult = await quoteResponse.json();
 
+      // Log the payout quote response
+      console.log("💱 Payout Quote Response:", {
+        quoteId: quoteResult.quote?.id,
+        contract: quoteResult.quote?.contract,
+        fullResponse: quoteResult,
+        timestamp: new Date().toISOString(),
+      });
+
       if (!quoteResult.success) {
         alert("Quote creation failed. Please try again.");
         return;
@@ -81,8 +121,8 @@ export default function Main() {
       if (quoteResult.step === "quote_created") {
         const spenderAddress =
           quoteResult.quote.contract?.blindpayContractAddress;
-        const contractAddress = quoteResult.quote.contract?.address;
-        const approvalAmount = quoteResult.quote.contract?.amount;
+        const contractAddress = quoteResult.quote.quote.contract?.address;
+        const approvalAmount = quoteResult.quote.quote.contract?.amount;
 
         if (!spenderAddress || !contractAddress || !approvalAmount) {
           alert("Missing required quote data");
@@ -119,9 +159,18 @@ export default function Main() {
 
         const payoutResult = await payoutResponse.json();
 
+        // Log the payout response
+        console.log("🎯 Payout Response Completed:", {
+          conversionId: payoutResult.conversion?.id,
+          fullResponse: payoutResult,
+          timestamp: new Date().toISOString(),
+        });
+
         if (payoutResult.success) {
           setConversionResult(payoutResult.conversion);
           alert(`Conversion completed! ID: ${payoutResult.conversion.id}`);
+          setPendingConversionData(null);
+          setSelectedBankAccountId("");
         } else {
           alert("Payout failed. Please try again.");
         }
@@ -130,6 +179,97 @@ export default function Main() {
       alert("Conversion failed. Please try again.");
     } finally {
       setIsConverting(false);
+      setPendingConversionData(null);
+      setSelectedBankAccountId("");
+    }
+  };
+
+  const proceedWithFiatToStableConversion = async (
+    data: ConversionData,
+    blockchainWalletId: string
+  ) => {
+    setIsConverting(true);
+    try {
+      // Skip adding wallet - user already has blockchain wallets added through PaymentMethods
+      // The blockchainWalletId parameter contains the ID of an existing wallet
+
+      const quoteResponse = await fetch("/api/payin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          step: "create_quote",
+          amount: data.fromAmount,
+          receiverId: receiverId,
+          token: data.toCurrency as Currency,
+          paymentMethod: config.blindpayDefaults.paymentMethod,
+          network: config.blindpayDefaults.network as Network,
+          blockchainWalletId, // Pass the selected wallet ID
+        }),
+      });
+
+      const quoteResult = await quoteResponse.json();
+
+      // Log the quote response
+      console.log("💱 Quote Response:", {
+        quoteId: quoteResult.quote?.id,
+        amount: quoteResult.quote?.amount,
+        fullResponse: quoteResult,
+        timestamp: new Date().toISOString(),
+      });
+
+      if (!quoteResult.success) {
+        alert("Failed to create quote. Please try again.");
+        return;
+      }
+
+      const payinResponse = await fetch("/api/payin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          step: "initiate_payin",
+          quoteId: quoteResult.quote.id,
+        }),
+      });
+
+      const payinResult = await payinResponse.json();
+
+      // Log the completed payin response
+      console.log("🎯 Payin Response Completed:", {
+        payinId: payinResult.payin?.id,
+        memoCode: payinResult.memoCode,
+        bankingDetails: payinResult.bankingDetails,
+        fullResponse: payinResult,
+        timestamp: new Date().toISOString(),
+      });
+
+      if (payinResult.success) {
+        setConversionResult({
+          id: payinResult.payin.id,
+          fromCurrency: data.fromCurrency,
+          toCurrency: data.toCurrency,
+          fromAmount: data.fromAmount,
+          toAmount: parseFloat(quoteResult.quote.amount) / 100,
+          status: "processing",
+          blindpay: {
+            payinId: payinResult.payin.id,
+            memoCode: payinResult.memoCode,
+            bankingDetails: payinResult.bankingDetails,
+          },
+        });
+        alert(
+          `Payin initiated! Use memo code: ${payinResult.memoCode} for your ACH transfer.`
+        );
+        setPendingConversionData(null);
+        setSelectedBlockchainWalletId("");
+      } else {
+        alert("Payin failed. Please try again.");
+      }
+    } catch {
+      alert("Conversion failed. Please try again.");
+    } finally {
+      setIsConverting(false);
+      setPendingConversionData(null);
+      setSelectedBlockchainWalletId("");
     }
   };
 
@@ -184,78 +324,29 @@ export default function Main() {
       return;
     }
 
-    setIsConverting(true);
     try {
-      const walletResponse = await fetch("/api/payin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          step: "add_wallet",
-          receiverId: receiverId,
-          walletAddress: primaryWallet.address,
-          network: config.blindpayDefaults.network,
-        }),
-      });
+      const walletsResponse = await fetch(
+        `/api/payment-methods/blockchain-wallets?receiverId=${receiverId}`
+      );
+      if (!walletsResponse.ok)
+        throw new Error("Failed to fetch blockchain wallets");
 
-      const walletResult = await walletResponse.json();
-      if (!walletResult.success) {
-        alert("Failed to add wallet. Please try again.");
-        return;
-      }
-
-      const quoteResponse = await fetch("/api/payin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          step: "create_quote",
-          amount: data.fromAmount,
-          receiverId: receiverId,
-          token: data.toCurrency as Currency,
-          paymentMethod: config.blindpayDefaults.paymentMethod,
-          network: config.blindpayDefaults.network as Network,
-        }),
-      });
-
-      const quoteResult = await quoteResponse.json();
-      if (!quoteResult.success) {
-        alert("Failed to create quote. Please try again.");
-        return;
-      }
-
-      const payinResponse = await fetch("/api/payin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          step: "initiate_payin",
-          quoteId: quoteResult.quote.id,
-        }),
-      });
-
-      const payinResult = await payinResponse.json();
-      if (payinResult.success) {
-        setConversionResult({
-          id: payinResult.payin.id,
-          fromCurrency: data.fromCurrency,
-          toCurrency: data.toCurrency,
-          fromAmount: data.fromAmount,
-          toAmount: parseFloat(quoteResult.quote.amount) / 100,
-          status: "processing",
-          blindpay: {
-            payinId: payinResult.payin.id,
-            memoCode: payinResult.memoCode,
-            bankingDetails: payinResult.bankingDetails,
-          },
-        });
-        alert(
-          `Payin initiated! Use memo code: ${payinResult.memoCode} for your ACH transfer.`
+      const walletsResult = await walletsResponse.json();
+      if (!walletsResult.success || !walletsResult.blockchainWallets?.length) {
+        throw new Error(
+          "No blockchain wallets found. Please add a blockchain wallet first."
         );
-      } else {
-        alert("Payin failed. Please try again.");
       }
-    } catch {
-      alert("Conversion failed. Please try again.");
-    } finally {
-      setIsConverting(false);
+
+      setAvailableBlockchainWallets(walletsResult.blockchainWallets);
+      setPendingConversionData(data);
+      setShowWalletSelection(true);
+    } catch (error) {
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch blockchain wallets"
+      );
     }
   };
 
@@ -413,7 +504,7 @@ export default function Main() {
                 </div>
               ) : !isKYCComplete ? (
                 <div className="max-w-2xl mx-auto">
-                  <KYCFlow />
+                  <BlindPayReceiverInvite />
                 </div>
               ) : (
                 <>
@@ -501,37 +592,123 @@ export default function Main() {
                   <WalletInfo />
                 </div>
                 <div className="lg:col-span-2">
+                  {conversionResult && conversionResult.blindpay?.memoCode && (
+                    <div className="mb-6">
+                      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="text-lg font-semibold text-blue-800">
+                            Payin Instructions - Complete Your ACH Transfer
+                          </h3>
+                          <button
+                            onClick={() => setConversionResult(null)}
+                            className="text-blue-400 hover:text-blue-600 text-lg"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                        <div className="text-blue-700 space-y-3">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <p>
+                                <strong>Conversion ID:</strong>{" "}
+                                {conversionResult.id}
+                              </p>
+                              <p>
+                                <strong>From:</strong>{" "}
+                                {conversionResult.fromAmount}{" "}
+                                {conversionResult.fromCurrency}
+                              </p>
+                              <p>
+                                <strong>To:</strong> {conversionResult.toAmount}{" "}
+                                {conversionResult.toCurrency}
+                              </p>
+                              <p>
+                                <strong>Status:</strong>{" "}
+                                {conversionResult.status}
+                              </p>
+                            </div>
+
+                            {conversionResult.blindpay?.bankingDetails && (
+                              <div className="space-y-2">
+                                <h4 className="font-semibold text-blue-800">
+                                  Banking Details for ACH Transfer:
+                                </h4>
+                                <div className="bg-white p-3 rounded border text-sm space-y-1">
+                                  <p>
+                                    <strong>MEMO CODE:</strong>{" "}
+                                    <span className="font-mono bg-yellow-100 px-2 py-1 rounded">
+                                      {conversionResult.blindpay.memoCode}
+                                    </span>
+                                  </p>
+                                  <p>
+                                    <strong>Routing Number:</strong>{" "}
+                                    {
+                                      conversionResult.blindpay.bankingDetails
+                                        .routing_number
+                                    }
+                                  </p>
+                                  <p>
+                                    <strong>Account Number:</strong>{" "}
+                                    {
+                                      conversionResult.blindpay.bankingDetails
+                                        .account_number
+                                    }
+                                  </p>
+                                  <p>
+                                    <strong>Account Type:</strong>{" "}
+                                    {
+                                      conversionResult.blindpay.bankingDetails
+                                        .account_type
+                                    }
+                                  </p>
+                                  <p>
+                                    <strong>Beneficiary:</strong>{" "}
+                                    {
+                                      conversionResult.blindpay.bankingDetails
+                                        .beneficiary.name
+                                    }
+                                  </p>
+                                  <p>
+                                    <strong>Bank Address:</strong>{" "}
+                                    {
+                                      conversionResult.blindpay.bankingDetails
+                                        .receiving_bank.address_line_1
+                                    }
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="text-sm mt-4 p-3 rounded bg-orange-100 text-orange-700">
+                            <p>
+                              <strong>Important:</strong> Include the memo code
+                              with your ACH transfer.
+                            </p>
+                            <p>
+                              BlindPay will monitor for payments for 5 business
+                              days.
+                            </p>
+                            <p>
+                              Once payment is confirmed, USDC will be
+                              transferred to your wallet.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   <TransactionHistory />
                 </div>
               </div>
 
-              {conversionResult && (
+              {conversionResult && !conversionResult.blindpay?.memoCode && (
                 <div className="max-w-4xl mx-auto">
-                  <div
-                    className={`border rounded-xl p-6 ${
-                      conversionResult.blindpay?.memoCode
-                        ? "bg-blue-50 border-blue-200"
-                        : "bg-green-50 border-green-200"
-                    }`}
-                  >
-                    <h3
-                      className={`text-lg font-semibold mb-2 ${
-                        conversionResult.blindpay?.memoCode
-                          ? "text-blue-800"
-                          : "text-green-800"
-                      }`}
-                    >
-                      {conversionResult.blindpay?.memoCode
-                        ? "Payin Instructions - Complete Your ACH Transfer"
-                        : "Conversion Initiated Successfully!"}
+                  <div className="bg-green-50 border border-green-200 rounded-xl p-6">
+                    <h3 className="text-lg font-semibold mb-2 text-green-800">
+                      Conversion Initiated Successfully!
                     </h3>
-                    <div
-                      className={`space-y-3 ${
-                        conversionResult.blindpay?.memoCode
-                          ? "text-blue-700"
-                          : "text-green-700"
-                      }`}
-                    >
+                    <div className="text-green-700 space-y-3">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <p>
@@ -550,89 +727,14 @@ export default function Main() {
                             <strong>Status:</strong> {conversionResult.status}
                           </p>
                         </div>
-
-                        {conversionResult.blindpay?.memoCode &&
-                          conversionResult.blindpay?.bankingDetails && (
-                            <div className="space-y-2">
-                              <h4 className="font-semibold text-blue-800">
-                                Banking Details for ACH Transfer:
-                              </h4>
-                              <div className="bg-white p-3 rounded border text-sm space-y-1">
-                                <p>
-                                  <strong>MEMO CODE:</strong>{" "}
-                                  <span className="font-mono bg-yellow-100 px-2 py-1 rounded">
-                                    {conversionResult.blindpay.memoCode}
-                                  </span>
-                                </p>
-                                <p>
-                                  <strong>Routing Number:</strong>{" "}
-                                  {
-                                    conversionResult.blindpay.bankingDetails
-                                      .routing_number
-                                  }
-                                </p>
-                                <p>
-                                  <strong>Account Number:</strong>{" "}
-                                  {
-                                    conversionResult.blindpay.bankingDetails
-                                      .account_number
-                                  }
-                                </p>
-                                <p>
-                                  <strong>Account Type:</strong>{" "}
-                                  {
-                                    conversionResult.blindpay.bankingDetails
-                                      .account_type
-                                  }
-                                </p>
-                                <p>
-                                  <strong>Beneficiary:</strong>{" "}
-                                  {
-                                    conversionResult.blindpay.bankingDetails
-                                      .beneficiary.name
-                                  }
-                                </p>
-                                <p>
-                                  <strong>Bank Address:</strong>{" "}
-                                  {
-                                    conversionResult.blindpay.bankingDetails
-                                      .receiving_bank.address_line_1
-                                  }
-                                </p>
-                              </div>
-                            </div>
-                          )}
                       </div>
 
-                      <div
-                        className={`text-sm mt-4 p-3 rounded ${
-                          conversionResult.blindpay?.memoCode
-                            ? "bg-orange-100 text-orange-700"
-                            : "bg-green-100 text-green-600"
-                        }`}
-                      >
-                        {conversionResult.blindpay?.memoCode ? (
-                          <>
-                            <p>
-                              <strong>Important:</strong> Include the memo code
-                              with your ACH transfer.
-                            </p>
-                            <p>
-                              BlindPay will monitor for payments for 5 business
-                              days.
-                            </p>
-                            <p>
-                              Once payment is confirmed, USDC will be
-                              transferred to your wallet.
-                            </p>
-                          </>
-                        ) : (
-                          <p>
-                            You&apos;ll receive updates on the conversion
-                            progress. Bank transfers typically take 1-3 business
-                            days.
-                          </p>
-                        )}
+                      <div className="text-sm mt-4 p-3 rounded bg-green-100 text-green-600">
+                        <p>
+                          You&apos;ll receive updates on the conversion
+                          progress. Bank transfers typically take 1-3 business
+                          days.
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -652,6 +754,7 @@ export default function Main() {
                 onClick={() => {
                   setShowBankSelection(false);
                   setPendingConversionData(null);
+                  setSelectedBankAccountId("");
                 }}
                 className="text-gray-400 hover:text-gray-600"
               >
@@ -702,6 +805,7 @@ export default function Main() {
                 onClick={() => {
                   setShowBankSelection(false);
                   setPendingConversionData(null);
+                  setSelectedBankAccountId("");
                 }}
                 className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
               >
@@ -717,6 +821,90 @@ export default function Main() {
                 className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Continue with Selected Account
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showWalletSelection && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">
+                Select Blockchain Wallet
+              </h3>
+              <button
+                onClick={() => {
+                  setShowWalletSelection(false);
+                  setPendingConversionData(null);
+                  setSelectedBlockchainWalletId("");
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="text-gray-600 mb-4 text-sm">
+              Choose which blockchain wallet to use for this conversion:
+            </p>
+
+            <div className="space-y-3 mb-6">
+              {availableBlockchainWallets.map((wallet) => (
+                <div
+                  key={wallet.id}
+                  className={`border rounded-lg p-3 cursor-pointer transition-colors ${
+                    selectedBlockchainWalletId === wallet.id
+                      ? "border-blue-500 bg-blue-50"
+                      : "border-gray-200 hover:border-gray-300"
+                  }`}
+                  onClick={() => handleBlockchainWalletSelection(wallet.id)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <h4 className="font-medium text-gray-900">
+                        {wallet.name}
+                      </h4>
+                      <p className="text-sm text-gray-600 capitalize">
+                        {wallet.network} Network
+                        {wallet.is_account_abstraction &&
+                          " • Account Abstraction"}
+                      </p>
+                      <p className="text-sm text-gray-500 font-mono">
+                        {wallet.address.slice(0, 6)}...
+                        {wallet.address.slice(-4)}
+                      </p>
+                    </div>
+                    {selectedBlockchainWalletId === wallet.id && (
+                      <div className="text-blue-600">✓</div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex space-x-3">
+              <button
+                onClick={() => {
+                  setShowWalletSelection(false);
+                  setPendingConversionData(null);
+                  setSelectedBlockchainWalletId("");
+                }}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (selectedBlockchainWalletId && pendingConversionData) {
+                    handleBlockchainWalletSelection(selectedBlockchainWalletId);
+                  }
+                }}
+                disabled={!selectedBlockchainWalletId}
+                className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Continue with Selected Wallet
               </button>
             </div>
           </div>
