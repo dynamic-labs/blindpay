@@ -244,6 +244,8 @@ export async function GET(request: NextRequest) {
       pagination: data.pagination || {},
     });
   } catch (error) {
+    console.error("Error in GET /api/payin:", error);
+
     return NextResponse.json(
       {
         success: false,

@@ -1,9 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useAccount } from "wagmi";
-import { formatCurrency, formatTokenAmount } from "@/lib/utils";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useAccount, useChainId } from "wagmi";
+import {
+  formatCurrency,
+  formatTokenAmount,
+  getExplorerUrl,
+  getNetworkName,
+  openExternalLink,
+} from "@/lib/utils";
 import { Transaction } from "@/types";
+import { useKYCStatus } from "@/lib/hooks/useKYCStatus";
 
 interface TrackingStep {
   step: string;
@@ -18,16 +25,78 @@ interface TrackingStep {
 
 export default function TransactionHistory() {
   const { address, isConnected } = useAccount();
+  const chainId = useChainId();
+  const { receiverId } = useKYCStatus();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(false);
   const [expandedTx, setExpandedTx] = useState<string | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const expandedTxRef = useRef<string | null>(null);
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    expandedTxRef.current = expandedTx;
+  }, [expandedTx]);
+
+  const fetchTransactions = useCallback(
+    async (preserveExpandedState = false) => {
+      console.log(
+        "🔄 fetchTransactions called, preserveExpandedState:",
+        preserveExpandedState
+      );
+      setLoading(true);
+      try {
+        const params = new URLSearchParams({
+          wallet_address: address || "",
+          limit: "50",
+        });
+
+        if (receiverId) {
+          params.append("receiver_id", receiverId);
+        }
+
+        const response = await fetch(`/api/transactions?${params.toString()}`);
+        const data = await response.json();
+
+        if (data.success) {
+          setTransactions(data.transactions);
+
+          // If we're preserving expanded state and the current expanded transaction
+          // no longer exists in the new data, clear the expanded state
+          if (preserveExpandedState && expandedTxRef.current) {
+            const expandedTransactionExists = data.transactions.some(
+              (tx: Transaction) => tx.id === expandedTxRef.current
+            );
+            if (!expandedTransactionExists) {
+              setExpandedTx(null);
+              expandedTxRef.current = null;
+            }
+          }
+        } else {
+          setTransactions([]);
+          if (preserveExpandedState) {
+            setExpandedTx(null);
+            expandedTxRef.current = null;
+          }
+        }
+      } catch {
+        setTransactions([]);
+        if (preserveExpandedState) {
+          setExpandedTx(null);
+          expandedTxRef.current = null;
+        }
+      } finally {
+        setLoading(false);
+      }
+    },
+    [address, receiverId]
+  );
 
   useEffect(() => {
     if (isConnected && address) {
       fetchTransactions();
     }
-  }, [isConnected, address]);
+  }, [isConnected, address, receiverId, fetchTransactions]);
 
   useEffect(() => {
     if (!autoRefresh || !isConnected || !address) return;
@@ -38,31 +107,18 @@ export default function TransactionHistory() {
     if (!hasProcessingTx) return;
 
     const interval = setInterval(() => {
-      fetchTransactions();
+      fetchTransactions(true); // Preserve expanded state during auto-refresh
     }, 30000);
 
     return () => clearInterval(interval);
-  }, [autoRefresh, isConnected, address, transactions]);
-
-  const fetchTransactions = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch(
-        `/api/payouts?wallet_address=${address}&limit=50`
-      );
-      const data = await response.json();
-
-      if (data.success) {
-        setTransactions(data.transactions);
-      } else {
-        setTransactions([]);
-      }
-    } catch (error) {
-      setTransactions([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [
+    autoRefresh,
+    isConnected,
+    address,
+    receiverId,
+    transactions,
+    fetchTransactions,
+  ]);
 
   const getStatusColor = (status: Transaction["status"]) => {
     switch (status) {
@@ -172,6 +228,28 @@ export default function TransactionHistory() {
     return null;
   };
 
+  const renderTransactionHash = (txHash: string, label: string = "TX") => {
+    const explorerUrl = getExplorerUrl(txHash, chainId);
+
+    if (explorerUrl) {
+      return (
+        <button
+          onClick={() => openExternalLink(explorerUrl)}
+          className="text-xs text-blue-600 hover:text-blue-800 hover:underline cursor-pointer transition-colors"
+          title={`View transaction on ${getNetworkName(chainId)}`}
+        >
+          {label}: {txHash.slice(0, 10)}...{txHash.slice(-8)}
+        </button>
+      );
+    }
+
+    return (
+      <div className="text-xs text-blue-600" title="Transaction hash">
+        {label}: {txHash.slice(0, 10)}...{txHash.slice(-8)}
+      </div>
+    );
+  };
+
   if (!isConnected) {
     return (
       <div className="bg-white rounded-xl shadow-lg p-6 w-full">
@@ -202,7 +280,7 @@ export default function TransactionHistory() {
             Auto-refresh
           </label>
           <button
-            onClick={fetchTransactions}
+            onClick={() => fetchTransactions(true)}
             disabled={loading}
             className="px-3 py-1 text-sm bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 disabled:opacity-50"
           >
@@ -218,8 +296,8 @@ export default function TransactionHistory() {
         </div>
       ) : transactions.length === 0 ? (
         <p className="text-gray-600 text-center py-8">
-          No transactions found. Complete a conversion to see payout tracking
-          here.
+          No transactions found. Complete a conversion or payin to see
+          transaction history here.
         </p>
       ) : (
         <div className="space-y-4">
@@ -235,6 +313,15 @@ export default function TransactionHistory() {
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          tx.type === "payin"
+                            ? "bg-blue-100 text-blue-600"
+                            : "bg-purple-100 text-purple-600"
+                        }`}
+                      >
+                        {tx.type === "payin" ? "Payin" : "Payout"}
+                      </span>
                       <span className="font-medium text-gray-800">
                         {formatTokenAmount(tx.fromAmount.toString())}{" "}
                         {tx.fromCurrency}
@@ -266,7 +353,10 @@ export default function TransactionHistory() {
                       {formatDate(tx.timestamp)}
                     </div>
                     <div className="flex items-center gap-2 text-xs text-gray-500">
-                      <span>Payout ID: {tx.payoutId}</span>
+                      <span>
+                        {tx.type === "payin" ? "Payin" : "Payout"} ID:{" "}
+                        {tx.type === "payin" ? tx.payinId : tx.payoutId}
+                      </span>
                       {tx.network && (
                         <>
                           <span>•</span>
@@ -275,8 +365,8 @@ export default function TransactionHistory() {
                       )}
                     </div>
                     {tx.txHash && (
-                      <div className="text-xs text-blue-600 mt-1">
-                        TX: {tx.txHash.slice(0, 10)}...{tx.txHash.slice(-8)}
+                      <div className="mt-1">
+                        {renderTransactionHash(tx.txHash)}
                       </div>
                     )}
                   </div>
@@ -289,7 +379,15 @@ export default function TransactionHistory() {
                       {tx.status.charAt(0).toUpperCase() + tx.status.slice(1)}
                     </span>
                     <button
-                      onClick={() => setExpandedTx(isExpanded ? null : tx.id)}
+                      onClick={() => {
+                        console.log(
+                          "🔽 Toggle expand for transaction:",
+                          tx.id,
+                          "currently expanded:",
+                          isExpanded
+                        );
+                        setExpandedTx(isExpanded ? null : tx.id);
+                      }}
                       className="p-1 text-gray-400 hover:text-gray-600"
                     >
                       <svg
@@ -332,6 +430,13 @@ export default function TransactionHistory() {
                         />
                       );
                     })}
+                  </div>
+                )}
+
+                {/* Payin-specific info */}
+                {tx.type === "payin" && tx.memoCode && (
+                  <div className="text-xs text-blue-600 mt-1">
+                    Memo Code: {tx.memoCode}
                   </div>
                 )}
 
@@ -435,14 +540,10 @@ export default function TransactionHistory() {
                                     </div>
                                   )}
                                   {stepInfo.step.transaction_hash && (
-                                    <div className="text-xs text-blue-600 mt-1">
-                                      TX:{" "}
-                                      {stepInfo.step.transaction_hash.slice(
-                                        0,
-                                        10
+                                    <div className="mt-1">
+                                      {renderTransactionHash(
+                                        stepInfo.step.transaction_hash
                                       )}
-                                      ...
-                                      {stepInfo.step.transaction_hash.slice(-8)}
                                     </div>
                                   )}
                                 </div>
@@ -455,6 +556,30 @@ export default function TransactionHistory() {
 
                     {/* Additional Details */}
                     <div className="grid grid-cols-2 gap-4 text-sm">
+                      {/* Banking Details for Payins */}
+                      {tx.type === "payin" && tx.bankingDetails && (
+                        <div className="col-span-2">
+                          <span className="text-gray-500">
+                            Banking Details:
+                          </span>
+                          <div className="text-gray-700 mt-1">
+                            <div>
+                              Account: {tx.bankingDetails.account_number}
+                            </div>
+                            <div>
+                              Routing: {tx.bankingDetails.routing_number}
+                            </div>
+                            <div>Type: {tx.bankingDetails.account_type}</div>
+                            <div>
+                              Beneficiary: {tx.bankingDetails.beneficiary.name}
+                            </div>
+                            <div>
+                              Bank: {tx.bankingDetails.receiving_bank.name}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       {tx.fees &&
                         (tx.fees.total_fee_amount ||
                           tx.fees.partner_fee_amount) && (
@@ -464,19 +589,31 @@ export default function TransactionHistory() {
                               {tx.fees.total_fee_amount && (
                                 <div>
                                   Total:{" "}
-                                  {formatCurrency(
-                                    tx.fees.total_fee_amount,
-                                    tx.toCurrency
-                                  )}
+                                  {tx.toCurrency === "USD" ||
+                                  tx.toCurrency === "EUR" ||
+                                  tx.toCurrency === "GBP"
+                                    ? formatCurrency(
+                                        tx.fees.total_fee_amount,
+                                        tx.toCurrency
+                                      )
+                                    : `${formatTokenAmount(
+                                        tx.fees.total_fee_amount.toString()
+                                      )} ${tx.toCurrency}`}
                                 </div>
                               )}
                               {tx.fees.partner_fee_amount && (
                                 <div>
                                   Partner:{" "}
-                                  {formatCurrency(
-                                    tx.fees.partner_fee_amount,
-                                    tx.toCurrency
-                                  )}
+                                  {tx.toCurrency === "USD" ||
+                                  tx.toCurrency === "EUR" ||
+                                  tx.toCurrency === "GBP"
+                                    ? formatCurrency(
+                                        tx.fees.partner_fee_amount,
+                                        tx.toCurrency
+                                      )
+                                    : `${formatTokenAmount(
+                                        tx.fees.partner_fee_amount.toString()
+                                      )} ${tx.toCurrency}`}
                                 </div>
                               )}
                             </div>
@@ -507,10 +644,16 @@ export default function TransactionHistory() {
                           <div>
                             <span className="text-gray-500">Local Amount:</span>
                             <div className="text-gray-700">
-                              {formatCurrency(
-                                tx.receiverLocalAmount,
-                                tx.toCurrency
-                              )}
+                              {tx.toCurrency === "USD" ||
+                              tx.toCurrency === "EUR" ||
+                              tx.toCurrency === "GBP"
+                                ? formatCurrency(
+                                    tx.receiverLocalAmount,
+                                    tx.toCurrency
+                                  )
+                                : `${formatTokenAmount(
+                                    tx.receiverLocalAmount.toString()
+                                  )} ${tx.toCurrency}`}
                             </div>
                           </div>
                         )}

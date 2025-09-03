@@ -13,6 +13,16 @@ export async function approveUSDBTokens(
   amount: string
 ): Promise<string> {
   try {
+    // Validate inputs
+    if (!contractAddress || !spenderAddress || !amount) {
+      throw new Error("Missing required parameters for token approval");
+    }
+
+    // Validate amount is a valid number
+    if (isNaN(Number(amount)) || Number(amount) <= 0) {
+      throw new Error(`Invalid approval amount: ${amount}`);
+    }
+
     // Execute the approval transaction using the contract address from BlindPay quote
     const hash = await writeContract(wagmiConfig, {
       address: contractAddress as `0x${string}`,
@@ -68,23 +78,4 @@ export async function transferUSDBTokens(
       }`
     );
   }
-}
-
-/**
- * Check if user has sufficient USDB balance and allowance
- * 🚨 NOT IMPLEMENTED - This function needs proper contract reading
- */
-export async function checkTokenAllowanceAndBalance(
-  userAddress: string,
-  spenderAddress: string,
-  requiredAmount: number
-): Promise<{
-  hasBalance: boolean;
-  hasAllowance: boolean;
-  balance: string;
-  allowance: string;
-}> {
-  throw new Error(
-    "checkTokenAllowanceAndBalance not implemented - use readContract from wagmi to implement this"
-  );
 }

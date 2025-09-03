@@ -1,15 +1,101 @@
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
 export const openExternalLink = (url: string) => {
   window.open(url, "_blank", "noopener,noreferrer");
+};
+
+export const getExplorerUrl = (txHash: string, chainId?: number) => {
+  if (!chainId) return null;
+
+  const explorers: { [key: number]: string } = {
+    1: `https://etherscan.io/tx/${txHash}`,
+    10: `https://optimistic.etherscan.io/tx/${txHash}`,
+    137: `https://polygonscan.com/tx/${txHash}`,
+    42161: `https://arbiscan.io/tx/${txHash}`,
+    8453: `https://basescan.org/tx/${txHash}`,
+    84532: `https://sepolia.basescan.org/tx/${txHash}`, // Base Sepolia
+    56: `https://bscscan.com/tx/${txHash}`,
+    43114: `https://snowtrace.io/tx/${txHash}`,
+    250: `https://ftmscan.com/tx/${txHash}`,
+    100: `https://gnosisscan.io/tx/${txHash}`,
+    1101: `https://zkevm.polygonscan.com/tx/${txHash}`,
+    7777777: `https://explorer.zora.energy/tx/${txHash}`,
+    11155420: `https://sepolia.optimism.io/tx/${txHash}`,
+    11155111: `https://sepolia.etherscan.io/tx/${txHash}`,
+    80001: `https://mumbai.polygonscan.com/tx/${txHash}`,
+  };
+
+  return explorers[chainId] || null;
+};
+
+export const getNetworkName = (chainId?: number) => {
+  if (!chainId) return "blockchain explorer";
+
+  const networkNames: { [key: number]: string } = {
+    1: "Ethereum",
+    10: "Optimism",
+    137: "Polygon",
+    42161: "Arbitrum",
+    8453: "Base",
+    84532: "Base Sepolia",
+    56: "BSC",
+    43114: "Avalanche",
+    250: "Fantom",
+    100: "Gnosis",
+    1101: "Polygon zkEVM",
+    7777777: "Zora",
+    11155420: "Optimism Sepolia",
+    11155111: "Ethereum Sepolia",
+    80001: "Polygon Mumbai",
+  };
+
+  return networkNames[chainId] || "blockchain explorer";
+};
+
+export const formatAmount = (amount: string, decimals: number) => {
+  try {
+    return (BigInt(amount) / BigInt(10 ** decimals)).toString();
+  } catch {
+    return "0";
+  }
 };
 
 export const formatCurrency = (
   amount: number,
   currency: string = "USD"
 ): string => {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: currency,
-  }).format(amount);
+  // Handle non-standard currency codes like USDB, USDC, USDT
+  if (currency === "USDB" || currency === "USDC" || currency === "USDT") {
+    return (
+      new Intl.NumberFormat("en-US", {
+        style: "decimal",
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 6,
+      }).format(amount) + ` ${currency}`
+    );
+  }
+
+  // Handle standard fiat currencies
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: currency,
+    }).format(amount);
+  } catch {
+    // Fallback for invalid currency codes
+    return (
+      new Intl.NumberFormat("en-US", {
+        style: "decimal",
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 6,
+      }).format(amount) + ` ${currency}`
+    );
+  }
 };
 
 export const formatTokenAmount = (
@@ -55,7 +141,8 @@ export interface BlindPayErrorInfo {
  */
 export function parseBlindPayError(
   status: number,
-  errorText?: string
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _errorText?: string
 ): BlindPayErrorInfo {
   switch (status) {
     case 402:
