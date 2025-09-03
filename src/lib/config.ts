@@ -7,6 +7,8 @@ export const config = {
     apiUrl: "https://api.blindpay.com/v1",
     instanceId: process.env.BLINDPAY_INSTANCE_ID!,
     apiKey: process.env.BLINDPAY_API_KEY!,
+    kycUrl:
+      "https://app.blindpay.com/e/receivers/invite?instanceId=in_sZgM6Bl4Ma9Q&type=individual&kyc_type=standard&token=506b40b087f091cb63a015056d240688211e00cbd117d694cbae0e59caf8f4a5",
   },
 
   // Dynamic Wallet Configuration

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useDynamicContext } from "@/lib/dynamic";
 import { useKYCStatus } from "@/lib/hooks/useKYCStatus";
+import { config } from "@/lib/config";
 
 export default function StablePayReceiverInvite() {
   const { primaryWallet, user } = useDynamicContext();
@@ -42,8 +43,7 @@ export default function StablePayReceiverInvite() {
   }, [user?.email, receiverId, checkReceiverExists, storeReceiverId]);
 
   const handleStartKYC = () => {
-    const url =
-      "https://app.blindpay.com/e/receivers/invite?instanceId=in_sZgM6Bl4Ma9Q&type=individual&kyc_type=standard&token=506b40b087f091cb63a015056d240688211e00cbd117d694cbae0e59caf8f4a5";
+    const url = config.blindpay.kycUrl;
     window.open(url, "_blank", "noopener,noreferrer");
   };
 
