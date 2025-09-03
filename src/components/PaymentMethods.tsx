@@ -2,7 +2,11 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useKYCStatus } from "@/lib/hooks/useKYCStatus";
-import { AccountType, AccountClass, PaymentMethodType } from "@/types/blindpay";
+import {
+  AccountType,
+  AccountClass,
+  PaymentMethodType,
+} from "@/types/stablepay";
 import { useDynamicContext } from "@/lib/dynamic";
 
 interface BankAccount {
@@ -185,7 +189,7 @@ export default function PaymentMethods({
           return;
         }
 
-        // Step 1: Get the message to sign from BlindPay
+        // Step 1: Get the message to sign
         const messageResponse = await fetch(
           `/api/payment-methods/blockchain-wallets/sign-message?receiverId=${receiverId}`
         );
@@ -325,30 +329,30 @@ export default function PaymentMethods({
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6">
+    <div className="bg-card rounded-xl shadow-lg p-6 border">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-semibold text-gray-800">
+        <h2 className="text-2xl font-semibold text-card-foreground">
           Payment Methods
         </h2>
-        <p className="text-sm text-gray-600 mb-2">
+        <p className="text-sm text-muted-foreground mb-2">
           Add at least one payment method to start converting funds
         </p>
         <button
           onClick={() => setShowAddForm(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+          className="bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90 transition-colors"
         >
           Add Payment Method
         </button>
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex space-x-1 mb-6 bg-gray-100 p-1 rounded-lg">
+      <div className="flex space-x-1 mb-6 bg-muted p-1 rounded-lg">
         <button
           onClick={() => setActiveTab("bank")}
           className={`flex-1 py-2 px-4 rounded-md transition-colors ${
             activeTab === "bank"
-              ? "bg-white text-blue-600 shadow-sm"
-              : "text-gray-600 hover:text-gray-800"
+              ? "bg-background text-primary shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
           }`}
         >
           Bank Accounts ({bankAccounts.length})
@@ -357,8 +361,8 @@ export default function PaymentMethods({
           onClick={() => setActiveTab("blockchain")}
           className={`flex-1 py-2 px-4 rounded-md transition-colors ${
             activeTab === "blockchain"
-              ? "bg-white text-blue-600 shadow-sm"
-              : "text-gray-600 hover:text-gray-800"
+              ? "bg-background text-primary shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
           }`}
         >
           Blockchain Wallets ({blockchainWallets.length})
@@ -367,16 +371,16 @@ export default function PaymentMethods({
 
       {/* Add Form Modal */}
       {showAddForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-card rounded-xl p-6 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto border">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">
+              <h3 className="text-lg font-semibold text-card-foreground">
                 Add{" "}
                 {activeTab === "bank" ? "Bank Account" : "Blockchain Wallet"}
               </h3>
               <button
                 onClick={() => setShowAddForm(false)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-muted-foreground hover:text-foreground"
               >
                 ✕
               </button>
@@ -389,14 +393,14 @@ export default function PaymentMethods({
                   <button
                     type="button"
                     onClick={populateWithDummyData}
-                    className="w-full bg-gray-100 text-gray-700 px-3 py-2 rounded-md hover:bg-gray-200 transition-colors text-sm border border-gray-300"
+                    className="w-full bg-muted text-muted-foreground px-3 py-2 rounded-md hover:bg-muted/80 transition-colors text-sm border border-input"
                   >
                     🧪 Fill with Test Data (Development Only)
                   </button>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-card-foreground mb-1">
                     Display Name *
                   </label>
                   <input
@@ -406,13 +410,13 @@ export default function PaymentMethods({
                     onChange={(e) =>
                       setBankForm((prev) => ({ ...prev, name: e.target.value }))
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground"
                     placeholder="My Bank Account"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-card-foreground mb-1">
                     Beneficiary Name *
                   </label>
                   <input
@@ -425,13 +429,13 @@ export default function PaymentMethods({
                         beneficiary_name: e.target.value,
                       }))
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground"
                     placeholder="John Doe"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-card-foreground mb-1">
                     Payment Method *
                   </label>
                   <select
@@ -443,7 +447,7 @@ export default function PaymentMethods({
                         type: e.target.value as PaymentMethodType,
                       }))
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground"
                   >
                     <option value="ach">ACH</option>
                     <option value="rtp">RTP</option>
@@ -459,7 +463,7 @@ export default function PaymentMethods({
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-card-foreground mb-1">
                     Account Number
                   </label>
                   <input
@@ -471,13 +475,13 @@ export default function PaymentMethods({
                         account_number: e.target.value,
                       }))
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground"
                     placeholder="1234567890"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-card-foreground mb-1">
                     Routing Number
                   </label>
                   <input
@@ -489,14 +493,14 @@ export default function PaymentMethods({
                         routing_number: e.target.value,
                       }))
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground"
                     placeholder="123456789"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-card-foreground mb-1">
                       Account Type
                     </label>
                     <select
@@ -507,7 +511,7 @@ export default function PaymentMethods({
                           account_type: e.target.value as AccountType,
                         }))
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground"
                     >
                       <option value="checking">Checking</option>
                       <option value="saving">Saving</option>
@@ -515,7 +519,7 @@ export default function PaymentMethods({
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-card-foreground mb-1">
                       Account Class
                     </label>
                     <select
@@ -526,7 +530,7 @@ export default function PaymentMethods({
                           account_class: e.target.value as AccountClass,
                         }))
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground"
                     >
                       <option value="individual">Individual</option>
                       <option value="business">Business</option>
@@ -535,7 +539,7 @@ export default function PaymentMethods({
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-card-foreground mb-1">
                     Country
                   </label>
                   <select
@@ -546,7 +550,7 @@ export default function PaymentMethods({
                         country: e.target.value,
                       }))
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground"
                   >
                     <option value="US">United States</option>
                     <option value="CA">Canada</option>
@@ -577,7 +581,7 @@ export default function PaymentMethods({
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-card-foreground mb-1">
                     Address Line 1
                   </label>
                   <input
@@ -589,13 +593,13 @@ export default function PaymentMethods({
                         address_line_1: e.target.value,
                       }))
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground"
                     placeholder="123 Main St"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-card-foreground mb-1">
                     City
                   </label>
                   <input
@@ -607,13 +611,13 @@ export default function PaymentMethods({
                         city: e.target.value,
                       }))
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground"
                     placeholder="San Francisco"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-card-foreground mb-1">
                     State/Province
                   </label>
                   <input
@@ -625,13 +629,13 @@ export default function PaymentMethods({
                         state_province_region: e.target.value,
                       }))
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground"
                     placeholder="CA"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-card-foreground mb-1">
                     Postal Code
                   </label>
                   <input
@@ -643,7 +647,7 @@ export default function PaymentMethods({
                         postal_code: e.target.value,
                       }))
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground"
                     placeholder="94101"
                   />
                 </div>
@@ -652,14 +656,14 @@ export default function PaymentMethods({
                   <button
                     type="button"
                     onClick={() => setShowAddForm(false)}
-                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+                    className="flex-1 px-4 py-2 border border-input text-foreground rounded-md hover:bg-muted"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
+                    className="flex-1 bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90 disabled:opacity-50"
                   >
                     {isLoading ? "Adding..." : "Add Bank Account"}
                   </button>
@@ -669,7 +673,7 @@ export default function PaymentMethods({
               <form onSubmit={handleAddBlockchainWallet} className="space-y-4">
                 {/* Wallet Addition Method Selection */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-card-foreground mb-1">
                     Addition Method *
                   </label>
                   <div className="space-y-2">
@@ -683,9 +687,9 @@ export default function PaymentMethods({
                             e.target.value as "secure" | "direct"
                           )
                         }
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                        className="h-4 w-4 text-primary focus:ring-ring border-input"
                       />
-                      <span className="ml-2 text-sm text-gray-700">
+                      <span className="ml-2 text-sm text-card-foreground">
                         🔐 Secure (Sign Message) - Recommended
                       </span>
                     </label>
@@ -699,9 +703,9 @@ export default function PaymentMethods({
                             e.target.value as "secure" | "direct"
                           )
                         }
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                        className="h-4 w-4 text-primary focus:ring-ring border-input"
                       />
-                      <span className="ml-2 text-sm text-gray-700">
+                      <span className="ml-2 text-sm text-card-foreground">
                         📝 Direct (Enter Address)
                       </span>
                     </label>
@@ -709,7 +713,7 @@ export default function PaymentMethods({
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-card-foreground mb-1">
                     Wallet Name *
                   </label>
                   <input
@@ -722,13 +726,13 @@ export default function PaymentMethods({
                         name: e.target.value,
                       }))
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground"
                     placeholder="My Polygon Wallet"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-card-foreground mb-1">
                     Network *
                   </label>
                   <select
@@ -740,7 +744,7 @@ export default function PaymentMethods({
                         network: e.target.value,
                       }))
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground"
                   >
                     <option value="base_sepolia">Base Sepolia</option>
                     <option value="polygon">Polygon</option>
@@ -753,7 +757,7 @@ export default function PaymentMethods({
 
                 {walletAdditionMethod === "direct" && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-card-foreground mb-1">
                       Wallet Address *
                     </label>
                     <input
@@ -766,22 +770,22 @@ export default function PaymentMethods({
                           address: e.target.value,
                         }))
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground"
                       placeholder="0x..."
                     />
                   </div>
                 )}
 
                 {walletAdditionMethod === "secure" && (
-                  <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                    <p className="text-sm text-blue-800">
+                  <div className="p-3 bg-primary/5 rounded-lg border border-primary/20">
+                    <p className="text-sm text-primary">
                       🔐 <strong>Secure Method:</strong> You&apos;ll be prompted
                       to sign a message with your connected wallet. This method
                       doesn&apos;t require you to enter your wallet address and
                       is more secure.
                     </p>
                     {!primaryWallet && (
-                      <p className="text-sm text-red-600 mt-2">
+                      <p className="text-sm text-destructive mt-2">
                         ⚠️ Please connect your wallet first to use the secure
                         method.
                       </p>
@@ -800,11 +804,11 @@ export default function PaymentMethods({
                         is_account_abstraction: e.target.checked,
                       }))
                     }
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-primary focus:ring-ring border-input rounded"
                   />
                   <label
                     htmlFor="isAccountAbstraction"
-                    className="ml-2 block text-sm text-gray-700"
+                    className="ml-2 block text-sm text-card-foreground"
                   >
                     Is Account Abstraction Wallet
                   </label>
@@ -814,7 +818,7 @@ export default function PaymentMethods({
                   <button
                     type="button"
                     onClick={() => setShowAddForm(false)}
-                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+                    className="flex-1 px-4 py-2 border border-input text-foreground rounded-md hover:bg-muted"
                   >
                     Cancel
                   </button>
@@ -824,7 +828,7 @@ export default function PaymentMethods({
                       isLoading ||
                       (walletAdditionMethod === "secure" && !primaryWallet)
                     }
-                    className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
+                    className="flex-1 bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90 disabled:opacity-50"
                   >
                     {isLoading
                       ? "Adding..."
@@ -842,15 +846,15 @@ export default function PaymentMethods({
       {/* Content */}
       {isLoading ? (
         <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="text-gray-600 mt-2">Loading...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground mt-2">Loading...</p>
         </div>
       ) : (
         <div>
           {activeTab === "bank" ? (
             <div>
               {bankAccounts.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-muted-foreground">
                   <p>No bank accounts added yet.</p>
                   <p className="text-sm">
                     Add a bank account to receive fiat payments.
@@ -861,29 +865,29 @@ export default function PaymentMethods({
                   {bankAccounts.map((account) => (
                     <div
                       key={account.id}
-                      className="border border-gray-200 rounded-lg p-4"
+                      className="border border-border rounded-lg p-4"
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
-                          <h4 className="font-medium text-gray-900">
+                          <h4 className="font-medium text-card-foreground">
                             {account.name}
                           </h4>
-                          <p className="text-sm text-gray-600">
+                          <p className="text-sm text-muted-foreground">
                             {account.account_type} • {account.account_class} •{" "}
                             {account.country}
                           </p>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-muted-foreground/70">
                             Account: ****{account.account_number.slice(-4)} |
                             Routing: {account.routing_number}
                           </p>
-                          <p className="text-xs text-gray-400">
+                          <p className="text-xs text-muted-foreground/50">
                             Added{" "}
                             {new Date(account.created_at).toLocaleDateString()}
                           </p>
                         </div>
                         <button
                           onClick={() => handleDeleteBankAccount(account.id)}
-                          className="text-red-600 hover:text-red-800 text-sm font-medium"
+                          className="text-destructive hover:text-destructive/80 text-sm font-medium"
                         >
                           Delete
                         </button>
@@ -896,7 +900,7 @@ export default function PaymentMethods({
           ) : (
             <div>
               {blockchainWallets.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-muted-foreground">
                   <p>No blockchain wallets added yet.</p>
                   <p className="text-sm">
                     Add a blockchain wallet to receive crypto payments.
@@ -907,23 +911,23 @@ export default function PaymentMethods({
                   {blockchainWallets.map((wallet) => (
                     <div
                       key={wallet.id}
-                      className="border border-gray-200 rounded-lg p-4"
+                      className="border border-border rounded-lg p-4"
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
-                          <h4 className="font-medium text-gray-900">
+                          <h4 className="font-medium text-card-foreground">
                             {wallet.name}
                           </h4>
-                          <p className="text-sm text-gray-600 capitalize">
+                          <p className="text-sm text-muted-foreground capitalize">
                             {wallet.network} Network
                             {wallet.is_account_abstraction &&
                               " • Account Abstraction"}
                           </p>
-                          <p className="text-sm text-gray-500 font-mono">
+                          <p className="text-sm text-muted-foreground/70 font-mono">
                             {wallet.address.slice(0, 6)}...
                             {wallet.address.slice(-4)}
                           </p>
-                          <p className="text-xs text-gray-400">
+                          <p className="text-xs text-muted-foreground/50">
                             Added{" "}
                             {new Date(wallet.created_at).toLocaleDateString()}
                           </p>
@@ -932,7 +936,7 @@ export default function PaymentMethods({
                           onClick={() =>
                             handleDeleteBlockchainWallet(wallet.id)
                           }
-                          className="text-red-600 hover:text-red-800 text-sm font-medium"
+                          className="text-destructive hover:text-destructive/80 text-sm font-medium"
                         >
                           Delete
                         </button>

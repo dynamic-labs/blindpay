@@ -116,10 +116,10 @@ export const truncateAddress = (
 };
 
 /**
- * BlindPay API Error Handling Utilities
+ * API Error Handling Utilities
  */
 
-export interface BlindPayErrorResponse {
+export interface ApiErrorResponse {
   error: string;
   details?: string;
   code?: string;
@@ -127,7 +127,7 @@ export interface BlindPayErrorResponse {
   status?: number;
 }
 
-export interface BlindPayErrorInfo {
+export interface ApiErrorInfo {
   message: string;
   code: string;
   solution: string;
@@ -137,20 +137,20 @@ export interface BlindPayErrorInfo {
 }
 
 /**
- * Parse BlindPay API error responses and provide user-friendly information
+ * Parse API error responses and provide user-friendly information
  */
-export function parseBlindPayError(
+export function parseApiError(
   status: number,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _errorText?: string
-): BlindPayErrorInfo {
+): ApiErrorInfo {
   switch (status) {
     case 402:
       return {
         message: "Payment Required - Bank Account Validation Failed",
         code: "BANK_ACCOUNT_VALIDATION_FAILED",
         solution:
-          "Complete KYC process and ensure your BlindPay account has a valid bank account with sufficient funding",
+          "Complete KYC process and ensure your account has a valid bank account with sufficient funding",
         isRecoverable: true,
         requiresAction: true,
         actionRequired: "Complete KYC and add banking information",
@@ -160,7 +160,7 @@ export function parseBlindPayError(
       return {
         message: "Unauthorized - Invalid API Credentials",
         code: "UNAUTHORIZED",
-        solution: "Check your BlindPay API configuration and credentials",
+        solution: "Check your API configuration and credentials",
         isRecoverable: false,
         requiresAction: true,
         actionRequired: "Update API configuration",
@@ -212,10 +212,9 @@ export function parseBlindPayError(
     case 503:
     case 504:
       return {
-        message: "BlindPay Service Unavailable",
+        message: "Service Unavailable",
         code: "SERVICE_UNAVAILABLE",
-        solution:
-          "BlindPay service is temporarily unavailable. Please try again later",
+        solution: "Service is temporarily unavailable. Please try again later",
         isRecoverable: true,
         requiresAction: false,
         actionRequired: "Wait and retry",
@@ -261,9 +260,7 @@ export function requiresUserAction(status: number, code?: string): boolean {
 /**
  * Get user-friendly error message for display in UI
  */
-export function getUserFriendlyErrorMessage(
-  errorInfo: BlindPayErrorInfo
-): string {
+export function getUserFriendlyErrorMessage(errorInfo: ApiErrorInfo): string {
   if (errorInfo.requiresAction) {
     return `${errorInfo.message}. ${errorInfo.actionRequired}.`;
   }
@@ -273,7 +270,7 @@ export function getUserFriendlyErrorMessage(
 /**
  * Get actionable solution for user
  */
-export function getActionableSolution(errorInfo: BlindPayErrorInfo): string {
+export function getActionableSolution(errorInfo: ApiErrorInfo): string {
   if (errorInfo.requiresAction) {
     return `${errorInfo.solution}. ${errorInfo.actionRequired}.`;
   }
@@ -297,19 +294,19 @@ export function needsBankingInfo(status: number, code?: string): boolean {
 /**
  * Get next steps for user based on error
  */
-export function getNextSteps(errorInfo: BlindPayErrorInfo): string[] {
+export function getNextSteps(errorInfo: ApiErrorInfo): string[] {
   const steps: string[] = [];
 
   if (errorInfo.code === "BANK_ACCOUNT_VALIDATION_FAILED") {
     steps.push("1. Complete KYC verification process");
     steps.push("2. Add valid banking information to your account");
-    steps.push("3. Ensure sufficient funding in your BlindPay account");
+    steps.push("3. Ensure sufficient funding in your account");
     steps.push("4. Try your request again");
   } else if (errorInfo.code === "UNAUTHORIZED") {
-    steps.push("1. Check your BlindPay API credentials");
+    steps.push("1. Check your API credentials");
     steps.push("2. Verify your instance ID and API key");
     steps.push("3. Ensure your account is active");
-    steps.push("4. Contact BlindPay support if issues persist");
+    steps.push("4. Contact support if issues persist");
   } else if (errorInfo.code === "INVALID_REQUEST") {
     steps.push("1. Verify all required parameters are provided");
     steps.push("2. Check parameter formats and values");

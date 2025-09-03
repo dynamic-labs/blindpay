@@ -43,9 +43,7 @@ export default function ConversionCard({
   } | null>(null);
   const [fetchingRate, setFetchingRate] = useState(false);
   const [rateError, setRateError] = useState<string | null>(null);
-  const [network] = useState<string>(
-    config.blindpayDefaults.network
-  );
+  const [network] = useState<string>(config.blindpayDefaults.network);
 
   useEffect(() => {
     const fetchRateAsync = async () => {
@@ -124,21 +122,21 @@ export default function ConversionCard({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md">
-      <h3 className="text-xl font-semibold text-gray-800 mb-6 text-center">
+    <div className="bg-card rounded-xl shadow-lg p-6 w-full max-w-md border">
+      <h3 className="text-xl font-semibold text-card-foreground mb-6 text-center">
         {title}
       </h3>
 
       {/* From Section */}
       <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-card-foreground mb-2">
           From
         </label>
         <div className="flex gap-2">
           <select
             value={fromCurrency}
             onChange={(e) => setFromCurrency(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring bg-background text-foreground"
           >
             {fromOptions.map((option) => (
               <option key={option} value={option}>
@@ -151,7 +149,7 @@ export default function ConversionCard({
             value={fromAmount}
             onChange={(e) => handleFromAmountChange(e.target.value)}
             placeholder="0.00"
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="flex-1 px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring bg-background text-foreground"
           />
         </div>
       </div>
@@ -160,11 +158,11 @@ export default function ConversionCard({
       <div className="flex justify-center mb-4">
         <button
           onClick={swapCurrencies}
-          className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors duration-200"
+          className="p-2 rounded-full bg-muted hover:bg-muted/80 transition-colors duration-200"
           aria-label="Swap currencies"
         >
           <svg
-            className="w-5 h-5 text-gray-600"
+            className="w-5 h-5 text-muted-foreground"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -181,14 +179,14 @@ export default function ConversionCard({
 
       {/* To Section */}
       <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-card-foreground mb-2">
           To
         </label>
         <div className="flex gap-2">
           <select
             value={toCurrency}
             onChange={(e) => setToCurrency(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring bg-background text-foreground"
           >
             {toOptions.map((option) => (
               <option key={option} value={option}>
@@ -201,15 +199,15 @@ export default function ConversionCard({
             value={toAmount}
             readOnly
             placeholder="0.00"
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700"
+            className="flex-1 px-3 py-2 border border-input rounded-lg bg-muted text-muted-foreground"
           />
         </div>
       </div>
 
       {/* Error Display */}
       {rateError && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-          <div className="text-sm text-red-700">
+        <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+          <div className="text-sm text-destructive">
             <div className="font-medium">⚠️ Rate Error</div>
             <div className="mt-1">{rateError}</div>
           </div>
@@ -218,8 +216,8 @@ export default function ConversionCard({
 
       {/* Rate Display */}
       {rate > 0 && (
-        <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-          <div className="text-sm text-blue-700">
+        <div className="mb-4 p-3 bg-primary/5 rounded-lg">
+          <div className="text-sm text-primary">
             <div className="flex justify-between">
               <span>Exchange Rate:</span>
               <span className="font-medium">
@@ -230,7 +228,7 @@ export default function ConversionCard({
             {rateDetails && rateDetails.blindpay_rate && (
               <div className="mt-2 text-xs space-y-1">
                 <div className="flex justify-between">
-                  <span>BlindPay Rate:</span>
+                  <span>Service Rate:</span>
                   <span>
                     {formatTokenAmount(rateDetails.blindpay_rate.toString())}
                   </span>
@@ -255,7 +253,7 @@ export default function ConversionCard({
             )}
 
             {fetchingRate && (
-              <span className="ml-2 text-blue-500">Updating...</span>
+              <span className="ml-2 text-primary/70">Updating...</span>
             )}
           </div>
         </div>
@@ -265,7 +263,7 @@ export default function ConversionCard({
       <button
         onClick={handleConvert}
         disabled={!fromAmount || !toAmount || isLoading || fetchingRate}
-        className="w-full py-3 px-4 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors duration-200"
+        className="w-full py-3 px-4 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 disabled:bg-muted disabled:cursor-not-allowed transition-colors duration-200"
       >
         {isLoading ? "Processing..." : "Convert"}
       </button>

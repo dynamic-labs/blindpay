@@ -5,7 +5,7 @@ import { config as wagmiConfig } from "@/lib/wagmi";
 import { config } from "@/lib/config";
 
 /**
- * Approve USDB tokens for BlindPay transfer
+ * Approve USDB tokens for transfer
  */
 export async function approveUSDBTokens(
   contractAddress: string,
@@ -23,7 +23,7 @@ export async function approveUSDBTokens(
       throw new Error(`Invalid approval amount: ${amount}`);
     }
 
-    // Execute the approval transaction using the contract address from BlindPay quote
+    // Execute the approval transaction using the contract address from quote
     const hash = await writeContract(wagmiConfig, {
       address: contractAddress as `0x${string}`,
       abi: USDB_ABI,

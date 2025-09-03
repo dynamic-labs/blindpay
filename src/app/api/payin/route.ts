@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { config } from "@/lib/config";
 import {
-  BlindPayPayinQuote,
-  BlindPayPayin,
-  BlindPayReceiver,
-  BlindPayBlockchainWallet,
+  StablePayPayinQuote,
+  StablePayPayin,
   PayinStep,
   Network,
+  BlindPayBlockchainWallet,
 } from "@/types";
 
 interface PayinQuoteBody {
@@ -144,7 +143,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const quoteData: BlindPayPayinQuote = await quoteResponse.json();
+      const quoteData: StablePayPayinQuote = await quoteResponse.json();
 
       return NextResponse.json({
         success: true,
@@ -177,7 +176,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const payinData: BlindPayPayin = await payinResponse.json();
+      const payinData: StablePayPayin = await payinResponse.json();
 
       return NextResponse.json({
         success: true,
@@ -233,7 +232,7 @@ export async function GET(request: NextRequest) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`BlindPay API error: ${response.status} - ${errorText}`);
+      throw new Error(`API error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
@@ -244,8 +243,6 @@ export async function GET(request: NextRequest) {
       pagination: data.pagination || {},
     });
   } catch (error) {
-    console.error("Error in GET /api/payin:", error);
-
     return NextResponse.json(
       {
         success: false,

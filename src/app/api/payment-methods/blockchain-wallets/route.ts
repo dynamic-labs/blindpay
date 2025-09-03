@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { config } from "@/lib/config";
-import { Network } from "@/types/blindpay";
+import { Network } from "@/types/stablepay";
 
 export async function GET(request: NextRequest) {
   try {
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
       }
     );
 
-    console.log("response", response);
+
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
@@ -112,17 +112,7 @@ export async function POST(request: NextRequest) {
       walletData.signature_tx_hash = signature_tx_hash;
     }
 
-    // Debug logging
-    console.log("🚀 BlindPay API Request:");
-    console.log(
-      "URL:",
-      `${config.blindpay.apiUrl}/instances/${config.blindpay.instanceId}/receivers/${receiverId}/blockchain-wallets`
-    );
-    console.log("Headers:", {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token.substring(0, 10)}...`,
-    });
-    console.log("Request Body:", JSON.stringify(walletData, null, 2));
+
 
     const response = await fetch(
       `${config.blindpay.apiUrl}/instances/${config.blindpay.instanceId}/receivers/${receiverId}/blockchain-wallets`,
@@ -136,14 +126,11 @@ export async function POST(request: NextRequest) {
       }
     );
 
-    // Debug logging for response
-    console.log("📡 BlindPay API Response:");
-    console.log("Status:", response.status);
-    console.log("Status Text:", response.statusText);
+
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.log("❌ Error Response Body:", errorData);
+
       return NextResponse.json(
         { error: "Failed to create blockchain wallet", details: errorData },
         { status: response.status }
@@ -151,7 +138,7 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await response.json();
-    console.log("✅ Success Response Body:", data);
+
 
     return NextResponse.json({
       success: true,

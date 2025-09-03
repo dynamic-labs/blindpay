@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { config } from "@/lib/config";
-import { PaymentMethodType, AccountType, AccountClass } from "@/types/blindpay";
+import { PaymentMethodType, AccountType, AccountClass } from "@/types/stablepay";
 
 interface BankAccountData {
   type: PaymentMethodType;

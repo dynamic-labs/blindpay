@@ -27,7 +27,6 @@ export function useConversion() {
       }
 
       // Check if the quote contains contract information for token approval
-      console.log("Quote response:", quoteResult.quote);
 
       let approvalTxHash: string;
       if (quoteResult.quote.contract) {
@@ -37,12 +36,6 @@ export function useConversion() {
           amount: approvalAmount,
         } = quoteResult.quote.contract;
 
-        console.log("Approval parameters:", {
-          contractAddress,
-          spenderAddress,
-          approvalAmount,
-        });
-
         approvalTxHash = await approveUSDBTokens(
           contractAddress,
           spenderAddress,
@@ -51,12 +44,9 @@ export function useConversion() {
       } else {
         // If no contract info in quote, we might need to handle this differently
         // For now, throw an error to indicate the issue
-        console.error(
-          "Quote response structure:",
-          JSON.stringify(quoteResult.quote, null, 2)
-        );
+
         throw new Error(
-          "Quote response does not contain contract approval information. Please check BlindPay API documentation for the correct approval flow."
+          "Quote response does not contain contract approval information. Please check API documentation for the correct approval flow."
         );
       }
 
@@ -98,7 +88,6 @@ export function useConversion() {
       );
 
       if (!quoteResult.success) {
-        console.error("Failed to create quote:", quoteResult);
         throw new Error("Failed to create quote");
       }
 

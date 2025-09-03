@@ -1,7 +1,8 @@
-// BlindPay API Types
-// These types are based on the BlindPay API documentation and responses
+// API Types
+// These types are based on the API documentation and responses
 
 // Enums for common values
+
 export enum PayinStep {
   CREATE_RECEIVER = "create_receiver",
   ADD_WALLET = "add_wallet",
@@ -104,7 +105,7 @@ export enum PaymentMethodType {
   INTERNATIONAL_SWIFT = "international_swift",
 }
 
-// Supported currencies according to BlindPay API specification
+// Supported currencies according to API specification
 export const SUPPORTED_CURRENCIES = [
   "USDC",
   "USDT",
@@ -121,7 +122,7 @@ export type SupportedCurrency = (typeof SUPPORTED_CURRENCIES)[number];
 // Currency type for API requests
 export type CurrencyType = "sender" | "receiver";
 
-export interface BlindPayPayinQuote {
+export interface StablePayPayinQuote {
   id: string;
   amount: string;
   fees: {
@@ -135,7 +136,7 @@ export interface BlindPayPayinQuote {
   blockchain_wallet_id: string;
 }
 
-export interface BlindPayPayin {
+export interface StablePayPayin {
   id: string;
   status: string;
   memo_code: string;
@@ -159,7 +160,7 @@ export interface BlindPayPayin {
   updated_at: string;
 }
 
-export interface BlindPayReceiver {
+export interface StablePayReceiver {
   id: string;
   type: ReceiverType;
   kyc_type: KycType;

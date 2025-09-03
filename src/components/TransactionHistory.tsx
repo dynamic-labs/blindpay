@@ -40,10 +40,6 @@ export default function TransactionHistory() {
 
   const fetchTransactions = useCallback(
     async (preserveExpandedState = false) => {
-      console.log(
-        "🔄 fetchTransactions called, preserveExpandedState:",
-        preserveExpandedState
-      );
       setLoading(true);
       try {
         const params = new URLSearchParams({
@@ -235,7 +231,7 @@ export default function TransactionHistory() {
       return (
         <button
           onClick={() => openExternalLink(explorerUrl)}
-          className="text-xs text-blue-600 hover:text-blue-800 hover:underline cursor-pointer transition-colors"
+          className="text-xs text-primary hover:text-primary/80 hover:underline cursor-pointer transition-colors"
           title={`View transaction on ${getNetworkName(chainId)}`}
         >
           {label}: {txHash.slice(0, 10)}...{txHash.slice(-8)}
@@ -244,7 +240,7 @@ export default function TransactionHistory() {
     }
 
     return (
-      <div className="text-xs text-blue-600" title="Transaction hash">
+      <div className="text-xs text-primary" title="Transaction hash">
         {label}: {txHash.slice(0, 10)}...{txHash.slice(-8)}
       </div>
     );
@@ -252,11 +248,11 @@ export default function TransactionHistory() {
 
   if (!isConnected) {
     return (
-      <div className="bg-white rounded-xl shadow-lg p-6 w-full">
-        <h3 className="text-xl font-semibold text-gray-800 mb-4">
+      <div className="bg-card rounded-xl shadow-lg p-6 w-full border">
+        <h3 className="text-xl font-semibold text-card-foreground mb-4">
           Transaction History
         </h3>
-        <p className="text-gray-600 text-center py-8">
+        <p className="text-muted-foreground text-center py-8">
           Connect your wallet to view transaction history.
         </p>
       </div>
@@ -264,25 +260,25 @@ export default function TransactionHistory() {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6 w-full">
+    <div className="bg-card rounded-xl shadow-lg p-6 w-full border">
       <div className="flex justify-between items-center mb-6">
-        <h3 className="text-xl font-semibold text-gray-800">
+        <h3 className="text-xl font-semibold text-card-foreground">
           Transaction History
         </h3>
         <div className="flex items-center gap-3">
-          <label className="flex items-center gap-2 text-sm text-gray-600">
+          <label className="flex items-center gap-2 text-sm text-muted-foreground">
             <input
               type="checkbox"
               checked={autoRefresh}
               onChange={(e) => setAutoRefresh(e.target.checked)}
-              className="rounded border-gray-300"
+              className="rounded border-input"
             />
             Auto-refresh
           </label>
           <button
             onClick={() => fetchTransactions(true)}
             disabled={loading}
-            className="px-3 py-1 text-sm bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 disabled:opacity-50"
+            className="px-3 py-1 text-sm bg-primary/10 text-primary rounded-lg hover:bg-primary/20 disabled:opacity-50"
           >
             {loading ? "Refreshing..." : "Refresh"}
           </button>
@@ -291,11 +287,11 @@ export default function TransactionHistory() {
 
       {loading && transactions.length === 0 ? (
         <div className="text-center py-8">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p className="mt-2 text-gray-600">Loading transactions...</p>
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <p className="mt-2 text-muted-foreground">Loading transactions...</p>
         </div>
       ) : transactions.length === 0 ? (
-        <p className="text-gray-600 text-center py-8">
+        <p className="text-muted-foreground text-center py-8">
           No transactions found. Complete a conversion or payin to see
           transaction history here.
         </p>
@@ -306,28 +302,25 @@ export default function TransactionHistory() {
             const trackingSteps = getTrackingSteps(tx);
 
             return (
-              <div
-                key={tx.id}
-                className="border border-gray-200 rounded-lg p-4"
-              >
+              <div key={tx.id} className="border border-border rounded-lg p-4">
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <span
                         className={`px-2 py-1 rounded-full text-xs font-medium ${
                           tx.type === "payin"
-                            ? "bg-blue-100 text-blue-600"
-                            : "bg-purple-100 text-purple-600"
+                            ? "bg-primary/10 text-primary"
+                            : "bg-secondary/10 text-secondary-foreground"
                         }`}
                       >
                         {tx.type === "payin" ? "Payin" : "Payout"}
                       </span>
-                      <span className="font-medium text-gray-800">
+                      <span className="font-medium text-card-foreground">
                         {formatTokenAmount(tx.fromAmount.toString())}{" "}
                         {tx.fromCurrency}
                       </span>
                       <svg
-                        className="w-4 h-4 text-gray-400"
+                        className="w-4 h-4 text-muted-foreground"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -339,7 +332,7 @@ export default function TransactionHistory() {
                           d="M17 8l4 4m0 0l-4 4m4-4H3"
                         />
                       </svg>
-                      <span className="font-medium text-gray-800">
+                      <span className="font-medium text-card-foreground">
                         {tx.toCurrency === "USD" ||
                         tx.toCurrency === "EUR" ||
                         tx.toCurrency === "GBP"
@@ -349,10 +342,10 @@ export default function TransactionHistory() {
                             }`}
                       </span>
                     </div>
-                    <div className="text-sm text-gray-600 mb-1">
+                    <div className="text-sm text-muted-foreground mb-1">
                       {formatDate(tx.timestamp)}
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground/70">
                       <span>
                         {tx.type === "payin" ? "Payin" : "Payout"} ID:{" "}
                         {tx.type === "payin" ? tx.payinId : tx.payoutId}
@@ -380,15 +373,9 @@ export default function TransactionHistory() {
                     </span>
                     <button
                       onClick={() => {
-                        console.log(
-                          "🔽 Toggle expand for transaction:",
-                          tx.id,
-                          "currently expanded:",
-                          isExpanded
-                        );
                         setExpandedTx(isExpanded ? null : tx.id);
                       }}
-                      className="p-1 text-gray-400 hover:text-gray-600"
+                      className="p-1 text-muted-foreground hover:text-foreground"
                     >
                       <svg
                         className={`w-4 h-4 transform transition-transform ${
@@ -435,18 +422,18 @@ export default function TransactionHistory() {
 
                 {/* Payin-specific info */}
                 {tx.type === "payin" && tx.memoCode && (
-                  <div className="text-xs text-blue-600 mt-1">
+                  <div className="text-xs text-primary mt-1">
                     Memo Code: {tx.memoCode}
                   </div>
                 )}
 
                 {/* Expanded Details */}
                 {isExpanded && (
-                  <div className="mt-4 border-t border-gray-100 pt-4">
+                  <div className="mt-4 border-t border-border pt-4">
                     {/* Tracking Steps */}
                     {trackingSteps.length > 0 && (
                       <div className="mb-4">
-                        <h4 className="text-sm font-medium text-gray-700 mb-2">
+                        <h4 className="text-sm font-medium text-card-foreground mb-2">
                           Tracking Steps
                         </h4>
                         <div className="space-y-2">
@@ -501,7 +488,7 @@ export default function TransactionHistory() {
                                 </div>
                                 <div className="flex-1">
                                   <div className="flex items-center justify-between">
-                                    <span className="text-sm font-medium text-gray-700">
+                                    <span className="text-sm font-medium text-card-foreground">
                                       {stepInfo.name}
                                     </span>
                                     <span
@@ -515,22 +502,22 @@ export default function TransactionHistory() {
                                   {stepInfo.step.status &&
                                     stepInfo.step.status !==
                                       stepInfo.step.step && (
-                                      <div className="text-xs text-gray-500 mt-1">
+                                      <div className="text-xs text-muted-foreground mt-1">
                                         Status: {stepInfo.step.status}
                                       </div>
                                     )}
                                   {estimatedTime && (
-                                    <div className="text-xs text-gray-500 mt-1">
+                                    <div className="text-xs text-muted-foreground mt-1">
                                       ETA: {estimatedTime}
                                     </div>
                                   )}
                                   {stepInfo.step.provider_name && (
-                                    <div className="text-xs text-gray-500 mt-1">
+                                    <div className="text-xs text-muted-foreground mt-1">
                                       Provider: {stepInfo.step.provider_name}
                                     </div>
                                   )}
                                   {stepInfo.step.completed_at && (
-                                    <div className="text-xs text-green-600 mt-1">
+                                    <div className="text-xs text-green-600 dark:text-green-400 mt-1">
                                       Completed:{" "}
                                       {formatDate(
                                         new Date(
@@ -559,10 +546,10 @@ export default function TransactionHistory() {
                       {/* Banking Details for Payins */}
                       {tx.type === "payin" && tx.bankingDetails && (
                         <div className="col-span-2">
-                          <span className="text-gray-500">
+                          <span className="text-muted-foreground">
                             Banking Details:
                           </span>
-                          <div className="text-gray-700 mt-1">
+                          <div className="text-card-foreground mt-1">
                             <div>
                               Account: {tx.bankingDetails.account_number}
                             </div>
@@ -584,8 +571,8 @@ export default function TransactionHistory() {
                         (tx.fees.total_fee_amount ||
                           tx.fees.partner_fee_amount) && (
                           <div>
-                            <span className="text-gray-500">Fees:</span>
-                            <div className="text-gray-700">
+                            <span className="text-muted-foreground">Fees:</span>
+                            <div className="text-card-foreground">
                               {tx.fees.total_fee_amount && (
                                 <div>
                                   Total:{" "}
@@ -624,14 +611,16 @@ export default function TransactionHistory() {
                         (tx.recipient.first_name ||
                           tx.recipient.legal_name) && (
                           <div>
-                            <span className="text-gray-500">Recipient:</span>
-                            <div className="text-gray-700">
+                            <span className="text-muted-foreground">
+                              Recipient:
+                            </span>
+                            <div className="text-card-foreground">
                               {tx.recipient.first_name && tx.recipient.last_name
                                 ? `${tx.recipient.first_name} ${tx.recipient.last_name}`
                                 : tx.recipient.legal_name}
                             </div>
                             {tx.recipient.account_number && (
-                              <div className="text-xs text-gray-500">
+                              <div className="text-xs text-muted-foreground">
                                 Account: ***
                                 {tx.recipient.account_number.slice(-4)}
                               </div>
@@ -642,8 +631,10 @@ export default function TransactionHistory() {
                       {tx.receiverLocalAmount &&
                         tx.receiverLocalAmount !== tx.toAmount && (
                           <div>
-                            <span className="text-gray-500">Local Amount:</span>
-                            <div className="text-gray-700">
+                            <span className="text-muted-foreground">
+                              Local Amount:
+                            </span>
+                            <div className="text-card-foreground">
                               {tx.toCurrency === "USD" ||
                               tx.toCurrency === "EUR" ||
                               tx.toCurrency === "GBP"
@@ -660,8 +651,12 @@ export default function TransactionHistory() {
 
                       {tx.description && (
                         <div>
-                          <span className="text-gray-500">Description:</span>
-                          <div className="text-gray-700">{tx.description}</div>
+                          <span className="text-muted-foreground">
+                            Description:
+                          </span>
+                          <div className="text-card-foreground">
+                            {tx.description}
+                          </div>
                         </div>
                       )}
                     </div>

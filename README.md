@@ -1,11 +1,11 @@
-# BlindPay - Stablecoin to Fiat Converter
+# Stablecoin to Fiat Converter
 
-A simplified demo application for converting between stablecoins and fiat currencies using Dynamic wallet integration and the BlindPay API.
+A simplified demo application for converting between stablecoins and fiat currencies using Dynamic wallet integration.
 
 ## Features
 
 - **Wallet Connection**: Connect using Dynamic wallet integration
-- **KYC Verification**: Complete KYC verification through BlindPay
+- **KYC Verification**: Complete KYC verification
 - **Payment Methods**: Add bank accounts and blockchain wallets
 - **Conversions**: Convert between stablecoins (USDB) and fiat (USD)
 - **Real-time Rates**: Get live exchange rates and quotes
@@ -15,7 +15,7 @@ A simplified demo application for converting between stablecoins and fiat curren
 ```
 src/
 ├── app/                    # Next.js app router
-│   ├── api/               # API routes for BlindPay integration
+│   ├── api/               # API routes for integration
 │   ├── layout.tsx         # Root layout with providers
 │   └── page.tsx           # Main application page
 ├── components/            # Reusable UI components
@@ -49,11 +49,13 @@ src/
 ## Getting Started
 
 1. Install dependencies:
+
    ```bash
    bun install
    ```
 
 2. Set up environment variables:
+
    ```bash
    BLINDPAY_INSTANCE_ID=your_instance_id
    BLINDPAY_API_KEY=your_api_key
@@ -68,7 +70,7 @@ src/
 ## Usage
 
 1. Connect your wallet using the Dynamic integration
-2. Complete KYC verification through BlindPay
+2. Complete KYC verification
 3. Add payment methods (bank account or blockchain wallet)
 4. Start converting between currencies
 
@@ -83,6 +85,7 @@ src/
 ## Demo Purpose
 
 This application is designed as a demo to showcase:
+
 - Clean, maintainable code structure
 - Proper separation of concerns
 - Reusable components and hooks

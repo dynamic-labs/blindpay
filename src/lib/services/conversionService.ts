@@ -24,7 +24,6 @@ export class ConversionService {
     });
 
     if (!response.ok) {
-      console.error("Failed to create quote:", response);
       throw new Error("Failed to create quote");
     }
 
@@ -84,7 +83,6 @@ export class ConversionService {
     });
 
     if (!response.ok) {
-      console.error("Failed to create quote:", response);
       throw new Error("Failed to create quote");
     }
 

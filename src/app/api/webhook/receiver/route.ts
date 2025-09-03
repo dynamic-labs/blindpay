@@ -74,8 +74,6 @@ export async function POST(request: Request) {
     }
   });
 
-  console.log(isValid);
-
   if (!isValid) {
     return new Response("Invalid signature", { status: 400 });
   }
@@ -84,7 +82,6 @@ export async function POST(request: Request) {
   let webhookData;
   try {
     webhookData = JSON.parse(rawBody);
-    console.log("Webhook data received:", webhookData);
   } catch {
     return new Response("Invalid JSON body", { status: 400 });
   }
@@ -93,7 +90,6 @@ export async function POST(request: Request) {
   try {
     await processReceiverWebhook(webhookData);
   } catch (error) {
-    console.error("Error processing receiver webhook:", error);
     // Don't return error to webhook sender - just log it
     // This prevents webhook retries for processing errors
   }
@@ -105,52 +101,48 @@ async function processReceiverWebhook(webhookData: ReceiverWebhookData) {
   const { id: receiverId, email } = webhookData;
 
   if (!email || !receiverId) {
-    console.error("Missing email or receiver ID in webhook data");
     return;
   }
 
   // Get Dynamic API configuration
   const dynamicApiToken = config.dynamic.apiToken;
   if (!dynamicApiToken) {
-    console.error("Dynamic API token not configured");
     return;
   }
 
   const environmentId = config.dynamic.environmentId;
   if (!environmentId) {
-    console.error("Dynamic environment ID not configured");
     return;
   }
 
   try {
     // Step 1: Filter users by email to get the user's UUID
     const filterParams = new URLSearchParams({
-      'filter[filterColumn]': 'email',
-      'filter[filterValue]': email,
-      limit: '1'
+      "filter[filterColumn]": "email",
+      "filter[filterValue]": email,
+      limit: "1",
     });
 
     const usersResponse = await fetch(
       `https://app.dynamic.xyz/api/v0/environments/${environmentId}/users?${filterParams}`,
       {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Authorization': `Bearer ${dynamicApiToken}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${dynamicApiToken}`,
+          "Content-Type": "application/json",
         },
       }
     );
 
     if (!usersResponse.ok) {
       const errorText = await usersResponse.text();
-      console.error('Failed to fetch users from Dynamic:', errorText);
+
       return;
     }
 
     const usersData = await usersResponse.json();
-    
+
     if (usersData.count === 0 || !usersData.users.length) {
-      console.log(`No user found with email: ${email}`);
       return;
     }
 
@@ -167,10 +159,10 @@ async function processReceiverWebhook(webhookData: ReceiverWebhookData) {
     const updateResponse = await fetch(
       `https://app.dynamic.xyz/api/v0/environments/${environmentId}/users/${userId}`,
       {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-          'Authorization': `Bearer ${dynamicApiToken}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${dynamicApiToken}`,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           metadata: updatedMetadata,
@@ -180,14 +172,10 @@ async function processReceiverWebhook(webhookData: ReceiverWebhookData) {
 
     if (!updateResponse.ok) {
       const errorText = await updateResponse.text();
-      console.error('Failed to update user metadata:', errorText);
+
       return;
     }
-
-    console.log(`Successfully updated user ${userId} with receiver ID ${receiverId}`);
-
   } catch (error) {
-    console.error('Error processing receiver webhook:', error);
     throw error; // Re-throw to be caught by the calling function
   }
 }

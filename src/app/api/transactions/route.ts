@@ -1,5 +1,5 @@
 import { config } from "@/lib/config";
-import { BlindPayPayoutsResponse, BlindPayPayin } from "@/types";
+import { StablePayPayoutsResponse, StablePayPayin } from "@/types";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
@@ -59,27 +59,21 @@ export async function GET(request: NextRequest) {
     if (!payoutsResponse.ok) {
       const errorText = await payoutsResponse.text();
       throw new Error(
-        `BlindPay Payouts API error: ${payoutsResponse.status} - ${errorText}`
+        `Payouts API error: ${payoutsResponse.status} - ${errorText}`
       );
     }
 
     if (!payinsResponse.ok) {
       const errorText = await (payinsResponse as Response).text();
       throw new Error(
-        `BlindPay Payins API error: ${
+        `Payins API error: ${
           (payinsResponse as Response).status
         } - ${errorText}`
       );
     }
 
-    const payoutsData: BlindPayPayoutsResponse = await payoutsResponse.json();
+    const payoutsData: StablePayPayoutsResponse = await payoutsResponse.json();
     const payinsData = await payinsResponse.json();
-
-    // Debug logging
-    console.log("Payouts data:", JSON.stringify(payoutsData, null, 2));
-    console.log("Payins data:", JSON.stringify(payinsData, null, 2));
-    console.log("Wallet address filter:", walletAddress);
-    console.log("Receiver ID filter:", receiverId);
 
     // Process payouts
     let filteredPayouts = payoutsData.data;
@@ -162,7 +156,7 @@ export async function GET(request: NextRequest) {
     const payinTransactions = filteredPayins.map((payin: any) => {
       let status: "processing" | "completed" | "failed" = "processing";
 
-      // Determine payin status based on BlindPay payin status
+      // Determine payin status based on payin status
       if (payin.status === "completed") {
         status = "completed";
       } else if (
@@ -172,13 +166,6 @@ export async function GET(request: NextRequest) {
       ) {
         status = "failed";
       }
-
-      console.log("Processing payin:", payin.id, "amounts:", {
-        sender_amount: payin.sender_amount,
-        receiver_amount: payin.receiver_amount,
-        currency: payin.currency,
-        token: payin.token,
-      });
 
       return {
         id: payin.id,
@@ -240,8 +227,6 @@ export async function GET(request: NextRequest) {
       payinsCount: payinTransactions.length,
     });
   } catch (error) {
-    console.error("Error in GET /api/transactions:", error);
-
     return NextResponse.json(
       {
         success: false,
