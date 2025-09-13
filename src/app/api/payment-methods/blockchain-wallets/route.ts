@@ -26,8 +26,6 @@ export async function GET(request: NextRequest) {
       }
     );
 
-
-
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       return NextResponse.json(
@@ -42,7 +40,7 @@ export async function GET(request: NextRequest) {
       success: true,
       blockchainWallets: wallets || [],
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -112,8 +110,6 @@ export async function POST(request: NextRequest) {
       walletData.signature_tx_hash = signature_tx_hash;
     }
 
-
-
     const response = await fetch(
       `${config.blindpay.apiUrl}/instances/${config.blindpay.instanceId}/receivers/${receiverId}/blockchain-wallets`,
       {
@@ -126,8 +122,6 @@ export async function POST(request: NextRequest) {
       }
     );
 
-
-
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
 
@@ -139,12 +133,11 @@ export async function POST(request: NextRequest) {
 
     const data = await response.json();
 
-
     return NextResponse.json({
       success: true,
       blockchainWallet: data.blockchain_wallet || data,
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

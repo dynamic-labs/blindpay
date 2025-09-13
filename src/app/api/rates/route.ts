@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { config } from "@/lib/config";
 import {
-  StablePayQuoteResponse,
+  BlindPayQuoteResponse,
   SupportedCurrency,
   CurrencyType,
   Network,
@@ -13,7 +13,7 @@ async function getStablePayFXQuote(
   to: SupportedCurrency,
   amount: number,
   currencyType: CurrencyType
-): Promise<StablePayQuoteResponse> {
+): Promise<BlindPayQuoteResponse> {
   const url = `${config.blindpay.apiUrl}/instances/${config.blindpay.instanceId}/quotes/fx`;
 
   const requestData = {
@@ -207,7 +207,7 @@ export async function GET(request: NextRequest) {
       }
 
       if (quoteType === "fx") {
-        const fxQuote = quote as StablePayQuoteResponse;
+        const fxQuote = quote as BlindPayQuoteResponse;
         const rate = fxQuote.result_amount / amount;
         return NextResponse.json({
           from,

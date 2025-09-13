@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { PaymentMethodsService } from "@/lib/services/paymentMethodsService";
 import { BankAccount } from "@/types";
 
@@ -15,29 +15,39 @@ export function usePaymentMethods(receiverId: string | null) {
   const [hasPaymentMethods, setHasPaymentMethods] = useState(false);
   const [hasBankAccounts, setHasBankAccounts] = useState(false);
   const [hasBlockchainWallets, setHasBlockchainWallets] = useState(false);
-  const [availableBankAccounts, setAvailableBankAccounts] = useState<BankAccount[]>([]);
-  const [availableBlockchainWallets, setAvailableBlockchainWallets] = useState<BlockchainWallet[]>([]);
+  const [availableBankAccounts, setAvailableBankAccounts] = useState<
+    BankAccount[]
+  >([]);
+  const [availableBlockchainWallets, setAvailableBlockchainWallets] = useState<
+    BlockchainWallet[]
+  >([]);
 
-  const checkPaymentMethods = async () => {
+  const checkPaymentMethods = useCallback(async () => {
     if (!receiverId) return false;
 
     try {
-      const result = await PaymentMethodsService.checkPaymentMethods(receiverId);
-      
+      const result = await PaymentMethodsService.checkPaymentMethods(
+        receiverId
+      );
+
       setHasPaymentMethods(result.hasAnyPaymentMethod);
       setHasBankAccounts(result.hasBankAccounts);
       setHasBlockchainWallets(result.hasBlockchainWallets);
-      
+
       if (result.hasBankAccounts) {
-        const bankAccounts = await PaymentMethodsService.getBankAccounts(receiverId);
+        const bankAccounts = await PaymentMethodsService.getBankAccounts(
+          receiverId
+        );
         setAvailableBankAccounts(bankAccounts);
       }
-      
+
       if (result.hasBlockchainWallets) {
-        const wallets = await PaymentMethodsService.getBlockchainWallets(receiverId);
+        const wallets = await PaymentMethodsService.getBlockchainWallets(
+          receiverId
+        );
         setAvailableBlockchainWallets(wallets);
       }
-      
+
       return result.hasAnyPaymentMethod;
     } catch {
       setHasPaymentMethods(false);
@@ -45,13 +55,13 @@ export function usePaymentMethods(receiverId: string | null) {
       setHasBlockchainWallets(false);
       return false;
     }
-  };
+  }, [receiverId]);
 
   useEffect(() => {
     if (receiverId) {
       checkPaymentMethods();
     }
-  }, [receiverId]);
+  }, [receiverId, checkPaymentMethods]);
 
   return {
     hasPaymentMethods,
@@ -62,4 +72,3 @@ export function usePaymentMethods(receiverId: string | null) {
     checkPaymentMethods,
   };
 }
-

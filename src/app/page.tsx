@@ -9,14 +9,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useDynamicContext } from "@/lib/dynamic";
 import { useKYCStatus } from "@/lib/hooks/useKYCStatus";
 import { usePaymentMethods } from "@/lib/hooks/usePaymentMethods";
 import { useAccount } from "wagmi";
 import { ArrowRight, CreditCard, History, TrendingUp } from "lucide-react";
 
 export default function HomePage() {
-  const { primaryWallet } = useDynamicContext();
   const { isConnected } = useAccount();
   const { receiverId, isKYCComplete, isLoading: kycLoading } = useKYCStatus();
 
@@ -153,7 +151,7 @@ export default function HomePage() {
                   Setup Complete!
                 </CardTitle>
                 <CardDescription>
-                  You're all set to start converting currencies
+                  You&apos;re all set to start converting currencies
                 </CardDescription>
               </CardHeader>
               <CardContent>

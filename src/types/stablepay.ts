@@ -350,7 +350,7 @@ export interface BlindPayPayout {
   has_virtual_account?: boolean;
 }
 
-export interface BlindPayPayoutsResponse {
+export interface PayoutsResponse {
   data: BlindPayPayout[];
   pagination: {
     has_more: boolean;

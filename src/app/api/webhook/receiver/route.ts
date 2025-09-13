@@ -89,7 +89,7 @@ export async function POST(request: Request) {
   // Process the receiver webhook data
   try {
     await processReceiverWebhook(webhookData);
-  } catch (error) {
+  } catch {
     // Don't return error to webhook sender - just log it
     // This prevents webhook retries for processing errors
   }
@@ -135,8 +135,7 @@ async function processReceiverWebhook(webhookData: ReceiverWebhookData) {
     );
 
     if (!usersResponse.ok) {
-      const errorText = await usersResponse.text();
-
+      await usersResponse.text();
       return;
     }
 
@@ -171,8 +170,7 @@ async function processReceiverWebhook(webhookData: ReceiverWebhookData) {
     );
 
     if (!updateResponse.ok) {
-      const errorText = await updateResponse.text();
-
+      await updateResponse.text();
       return;
     }
   } catch (error) {

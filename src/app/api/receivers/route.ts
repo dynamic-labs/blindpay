@@ -1,7 +1,7 @@
 import { config } from "@/lib/config";
 import {
   StablePayReceiver,
-  StablePayTOS,
+  BlindPayTOS,
   Currency,
   IdDocType,
   ProofOfAddressDocType,
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const tosData: StablePayTOS = await makeRequest(
+      const tosData: BlindPayTOS = await makeRequest(
         `${config.blindpay.apiUrl}/e/instances/${config.blindpay.instanceId}/tos`,
         "POST",
         { idempotency_key: generateUUID() }
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const tosData: StablePayTOS = await makeRequest(
+      const tosData: BlindPayTOS = await makeRequest(
         `${config.blindpay.apiUrl}/e/instances/${config.blindpay.instanceId}/tos`,
         "PUT",
         { session_token: data.sessionToken, idempotency_key: generateUUID() }

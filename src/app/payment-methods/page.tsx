@@ -10,13 +10,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useDynamicContext } from "@/lib/dynamic";
 import { useKYCStatus } from "@/lib/hooks/useKYCStatus";
 import { usePaymentMethods } from "@/lib/hooks/usePaymentMethods";
 import { useAccount } from "wagmi";
 
 export default function PaymentMethodsPage() {
-  const { primaryWallet } = useDynamicContext();
   const { isConnected } = useAccount();
   const { receiverId, isKYCComplete, isLoading: kycLoading } = useKYCStatus();
 

@@ -27,9 +27,7 @@ export async function POST(request: NextRequest) {
       walletAddress,
       quoteId,
       receiverId,
-      email,
-      first_name,
-      last_name,
+
       paymentMethod,
       token,
       network,
