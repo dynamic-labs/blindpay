@@ -8,7 +8,7 @@ import {
   SUPPORTED_CURRENCIES,
 } from "@/types";
 
-async function getBlindPayFXQuote(
+async function getStablePayFXQuote(
   from: SupportedCurrency,
   to: SupportedCurrency,
   amount: number,
@@ -39,14 +39,14 @@ async function getBlindPayFXQuote(
       errorDetails += ` - ${errorBody}`;
     } catch {}
 
-    throw new Error(`BlindPay API error: ${errorDetails}`);
+    throw new Error(`API error: ${errorDetails}`);
   }
 
   const fxData = await response.json();
   return fxData;
 }
 
-async function getBlindPayFullQuote(
+async function getStablePayFullQuote(
   from: SupportedCurrency,
   to: SupportedCurrency,
   amount: number,
@@ -88,7 +88,7 @@ async function getBlindPayFullQuote(
       const errorBody = await response.text();
       errorDetails += ` - ${errorBody}`;
     } catch {}
-    throw new Error(`BlindPay API error: ${errorDetails}`);
+    throw new Error(`API error: ${errorDetails}`);
   }
 
   return response.json();
@@ -158,7 +158,7 @@ export async function GET(request: NextRequest) {
       let quoteType = "fx";
 
       try {
-        quote = await getBlindPayFXQuote(from, to, amount, currencyType);
+        quote = await getStablePayFXQuote(from, to, amount, currencyType);
       } catch (fxError) {
         if (fxError instanceof Error && fxError.message.includes("402")) {
           if (!bankAccountId || !network) {
@@ -166,18 +166,18 @@ export async function GET(request: NextRequest) {
               {
                 error: "Bank Account and Network Required",
                 details:
-                  "FX quote failed due to bank account validation. Please provide both bank_account_id and network parameters for full quote or ensure your BlindPay account has a valid bank account.",
+                  "FX quote failed due to bank account validation. Please provide both bank_account_id and network parameters for full quote or ensure your account has a valid bank account.",
                 code: "BANK_ACCOUNT_AND_NETWORK_REQUIRED",
                 status: 402,
                 solution:
-                  "Complete KYC process and add banking information to your BlindPay account, or provide both bank_account_id and network parameters for full quote",
+                  "Complete KYC process and add banking information to your account, or provide both bank_account_id and network parameters for full quote",
               },
               { status: 402 }
             );
           }
 
           try {
-            quote = await getBlindPayFullQuote(
+            quote = await getStablePayFullQuote(
               from,
               to,
               amount,
@@ -196,7 +196,7 @@ export async function GET(request: NextRequest) {
                 code: "BANK_ACCOUNT_VALIDATION_FAILED",
                 status: 402,
                 solution:
-                  "Contact BlindPay support to verify your bank account status and funding requirements",
+                  "Contact support to verify your bank account status and funding requirements",
               },
               { status: 402 }
             );

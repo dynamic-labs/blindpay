@@ -1,6 +1,6 @@
 import { config } from "@/lib/config";
 import {
-  BlindPayReceiver,
+  StablePayReceiver,
   BlindPayTOS,
   Currency,
   IdDocType,
@@ -28,11 +28,11 @@ function createHeaders() {
 
 function validateConfig() {
   if (!config.blindpay.instanceId || !config.blindpay.apiKey) {
-    throw new Error("Invalid BlindPay configuration");
+    throw new Error("Invalid configuration");
   }
 }
 
-async function makeBlindPayRequest(
+async function makeRequest(
   url: string,
   method: string,
   body?: Record<string, unknown>
@@ -45,7 +45,7 @@ async function makeBlindPayRequest(
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`BlindPay API error: ${response.status} - ${errorText}`);
+    throw new Error(`API error: ${response.status} - ${errorText}`);
   }
 
   return response.json();
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const tosData: BlindPayTOS = await makeBlindPayRequest(
+      const tosData: BlindPayTOS = await makeRequest(
         `${config.blindpay.apiUrl}/e/instances/${config.blindpay.instanceId}/tos`,
         "POST",
         { idempotency_key: generateUUID() }
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const tosData: BlindPayTOS = await makeBlindPayRequest(
+      const tosData: BlindPayTOS = await makeRequest(
         `${config.blindpay.apiUrl}/e/instances/${config.blindpay.instanceId}/tos`,
         "PUT",
         { session_token: data.sessionToken, idempotency_key: generateUUID() }
@@ -217,7 +217,7 @@ export async function POST(request: NextRequest) {
         };
       }
 
-      const receiverData: BlindPayReceiver = await makeBlindPayRequest(
+      const receiverData: StablePayReceiver = await makeRequest(
         `${config.blindpay.apiUrl}/instances/${config.blindpay.instanceId}/receivers`,
         "POST",
         receiverBody
@@ -253,7 +253,7 @@ export async function GET(request: NextRequest) {
     const offset = searchParams.get("offset") || "0";
 
     if (receiverId) {
-      const receiverData = await makeBlindPayRequest(
+      const receiverData = await makeRequest(
         `${config.blindpay.apiUrl}/instances/${config.blindpay.instanceId}/receivers/${receiverId}`,
         "GET"
       );
@@ -265,7 +265,7 @@ export async function GET(request: NextRequest) {
     queryParams.append("offset", offset);
     if (email) queryParams.append("email", email);
 
-    const data = await makeBlindPayRequest(
+    const data = await makeRequest(
       `${config.blindpay.apiUrl}/instances/${
         config.blindpay.instanceId
       }/receivers?${queryParams.toString()}`,

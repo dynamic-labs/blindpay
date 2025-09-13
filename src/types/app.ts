@@ -2,7 +2,9 @@
 
 export interface Transaction {
   id: string;
+  type: "payin" | "payout";
   payoutId?: string;
+  payinId?: string;
   quoteId?: string;
   fromCurrency: string;
   toCurrency: string;
@@ -15,6 +17,22 @@ export interface Transaction {
   completedAt?: number;
   network: string;
   description?: string;
+  memoCode?: string;
+  bankingDetails?: {
+    routing_number: string;
+    account_number: string;
+    account_type: string;
+    beneficiary: {
+      name: string;
+      address_line_1: string;
+      address_line_2: string;
+    };
+    receiving_bank: {
+      name: string;
+      address_line_1: string;
+      address_line_2: string;
+    };
+  };
 
   // Detailed tracking information
   tracking?: {
@@ -70,8 +88,9 @@ export interface Transaction {
     type?: string;
   };
 
-  // Raw payout data for debugging
+  // Raw data for debugging
   rawPayout?: unknown;
+  rawPayin?: unknown;
 }
 
 export interface BankingDetails {

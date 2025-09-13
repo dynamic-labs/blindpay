@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
       const { bankAccountId } = body;
       if (!bankAccountId) {
         return NextResponse.json(
-          { error: "Bank account ID is required for BlindPay payouts" },
+          { error: "Bank account ID is required for payouts" },
           { status: 400 }
         );
       }
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
           if (!createQuoteResponse.ok) {
             const errorText = await createQuoteResponse.text();
             throw new Error(
-              `BlindPay quote creation failed: ${createQuoteResponse.status} - ${errorText}`
+              `Quote creation failed: ${createQuoteResponse.status} - ${errorText}`
             );
           }
 
@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
           if (!executePayoutResponse.ok) {
             const errorText = await executePayoutResponse.text();
             throw new Error(
-              `BlindPay payout execution failed: ${executePayoutResponse.status} - ${errorText}`
+              `Payout execution failed: ${executePayoutResponse.status} - ${errorText}`
             );
           }
 
@@ -141,13 +141,13 @@ export async function POST(request: NextRequest) {
                 fullResponse: payoutResponse,
               },
             },
-            message: "BlindPay conversion completed successfully",
+            message: "Conversion completed successfully",
           });
         }
       } catch (error) {
         return NextResponse.json(
           {
-            error: "BlindPay conversion failed",
+            error: "Conversion failed",
             details: error instanceof Error ? error.message : "Unknown error",
           },
           { status: 500 }
@@ -196,7 +196,7 @@ export async function GET(request: NextRequest) {
         if (!response.ok) {
           const errorText = await response.text();
           throw new Error(
-            `BlindPay payout status query failed: ${response.status} - ${errorText}`
+            `Payout status query failed: ${response.status} - ${errorText}`
           );
         }
 

@@ -1,166 +1,93 @@
-# BlindPay - Stablecoin to Fiat Converter
+# Stablecoin to Fiat Converter
 
-A Next.js application that enables seamless conversion between stablecoins and fiat currencies using BlindPay's API and Dynamic wallet integration.
+A simplified demo application for converting between stablecoins and fiat currencies using Dynamic wallet integration.
 
-## 🚀 Features
+## Features
 
-- **Dynamic Wallet Integration**: Connect wallets using Dynamic Labs
-- **BlindPay API Integration**: Real-time conversion rates and execution
-- **KYC Verification Flow**: Complete KYC verification to use BlindPay services
-- **User Metadata Storage**: Receiver IDs stored in Dynamic user metadata
-- **Multi-Currency Support**: Support for various stablecoins and fiat currencies
-- **Real-time Quotes**: Get live conversion rates before executing trades
+- **Wallet Connection**: Connect using Dynamic wallet integration
+- **KYC Verification**: Complete KYC verification
+- **Payment Methods**: Add bank accounts and blockchain wallets
+- **Conversions**: Convert between stablecoins (USDB) and fiat (USD)
+- **Real-time Rates**: Get live exchange rates and quotes
 
-## 🛠 Setup
+## Project Structure
 
-1. **Install dependencies**:
+```
+src/
+├── app/                    # Next.js app router
+│   ├── api/               # API routes for integration
+│   ├── layout.tsx         # Root layout with providers
+│   └── page.tsx           # Main application page
+├── components/            # Reusable UI components
+│   ├── ConversionCard.tsx # Currency conversion interface
+│   ├── SelectionModal.tsx # Payment method selection modal
+│   ├── SetupProgress.tsx  # User setup progress indicator
+│   └── ...                # Other UI components
+├── lib/                   # Core functionality
+│   ├── config.ts          # Application configuration
+│   ├── services/          # Business logic services
+│   │   ├── conversionService.ts    # Conversion operations
+│   │   └── paymentMethodsService.ts # Payment methods management
+│   ├── hooks/             # Custom React hooks
+│   │   ├── useConversion.ts        # Conversion state management
+│   │   ├── useKYCStatus.ts         # KYC status management
+│   │   └── usePaymentMethods.ts    # Payment methods state
+│   └── ...                # Other utilities
+└── types/                 # TypeScript type definitions
+```
+
+## Key Improvements Made
+
+1. **Simplified Architecture**: Broke down the monolithic main page into focused components
+2. **Custom Hooks**: Extracted business logic into reusable hooks
+3. **Service Layer**: Created service classes for API operations
+4. **Component Reusability**: Built reusable components like SelectionModal
+5. **Cleaner State Management**: Simplified state handling and removed complex logic
+6. **Better Error Handling**: Improved error messages and user feedback
+7. **Removed Hardcoding**: Eliminated hardcoded values and fallbacks
+
+## Getting Started
+
+1. Install dependencies:
 
    ```bash
    bun install
    ```
 
-2. **Set up environment variables**:
-   Create a `.env.local` file with the following variables:
+2. Set up environment variables:
 
-   ```env
-   # BlindPay API Configuration (Required)
-   BLINDPAY_API_URL=https://api.blindpay.com/v1
-   BLINDPAY_INSTANCE_ID=your_instance_id_here
-   BLINDPAY_API_KEY=your_api_key_here
-
-   # Dynamic Wallet Configuration (Required)
-   NEXT_PUBLIC_DYNAMIC_ENVIRONMENT_ID=your_dynamic_environment_id_here
-
-   # Contract Addresses (Optional - defaults provided)
-   NEXT_PUBLIC_USDB_CONTRACT_ADDRESS=0x4D423D2cfB373862B8E12843B6175752dc75f795
-
-   # BlindPay Defaults (Optional - will use sensible defaults)
-   BLINDPAY_DEFAULT_NETWORK=base_sepolia
-   BLINDPAY_CURRENCY_TYPE=sender
-   BLINDPAY_COVER_FEES=true
-   BLINDPAY_PAYMENT_METHOD=ach
-   BLINDPAY_STABLECOIN_TOKEN=USDC
-   BLINDPAY_FIAT_CURRENCY=USD
+   ```bash
+   BLINDPAY_INSTANCE_ID=your_instance_id
+   BLINDPAY_API_KEY=your_api_key
+   NEXT_PUBLIC_DYNAMIC_ENVIRONMENT_ID=your_dynamic_env_id
    ```
 
-   **To get your BlindPay credentials:**
-
-   1. Create an account on [BlindPay](https://blindpay.com)
-   2. Create a development instance
-   3. Create your API key
-   4. Note your instance ID and bank account ID
-
-3. **Run the development server**:
-
+3. Run the development server:
    ```bash
    bun run dev
    ```
 
-4. **Open your browser**:
-   Navigate to [http://localhost:3000](http://localhost:3000)
+## Usage
 
-## 🔐 KYC Integration
+1. Connect your wallet using the Dynamic integration
+2. Complete KYC verification
+3. Add payment methods (bank account or blockchain wallet)
+4. Start converting between currencies
 
-### How It Works
+## Technologies Used
 
-1. **Wallet Connection**: Users connect their wallet using Dynamic Labs
-2. **KYC Verification**: Users complete a KYC form with personal information
-3. **Receiver Creation**: BlindPay creates a receiver with the provided KYC data
-4. **Metadata Storage**: The receiver ID and banking ID are stored in Dynamic user metadata using the `useUserUpdateRequest` hook
-5. **Service Access**: Users can now access BlindPay services using their stored receiver ID
-6. **Data Persistence**: All KYC data persists across sessions and devices via Dynamic's user metadata system
+- **Next.js 15**: React framework with app router
+- **Dynamic**: Wallet connection and user management
+- **Wagmi**: Ethereum interactions
+- **Tailwind CSS**: Styling
+- **TypeScript**: Type safety
 
-### KYC Flow
+## Demo Purpose
 
-The KYC flow includes:
+This application is designed as a demo to showcase:
 
-- Personal information (name, email, date of birth)
-- Contact details (phone number)
-- Address information (street, city, state_province_region, postal code)
-- Document verification (proof of address, ID documents)
-
-### Security Features
-
-- KYC data is sent directly to BlindPay's secure API
-- Receiver IDs are stored in Dynamic's encrypted user metadata
-- No sensitive KYC data is stored locally
-- Environment variables for development defaults
-
-## 💱 How It Works
-
-### Fiat to Stablecoin (Payin)
-
-1. **Connect Wallet**: Connect your wallet using Dynamic Labs
-2. **Complete KYC**: Complete KYC verification if not already done
-3. **Enter Amount**: Specify the USD amount to convert
-4. **Create Quote**: Get a quote for the conversion rate
-5. **Get Banking Details**: Receive BlindPay banking details and memo code
-6. **ACH Transfer**: Send ACH transfer to provided banking details with memo code
-7. **Receive Tokens**: USDC is automatically sent to your wallet after payment confirmation
-
-### Stablecoin to Fiat (Payout)
-
-1. **Connect Wallet**: Connect your wallet using Dynamic Labs
-2. **Complete KYC**: Complete KYC verification if not already done
-3. **Enter Amount**: Specify the stablecoin amount to convert
-4. **Create Quote**: Get a quote for the conversion
-5. **Approve Tokens**: Approve BlindPay contract to spend your tokens
-6. **Execute Payout**: BlindPay processes the payout to your bank account
-
-## 🏗 Architecture
-
-### Frontend Components
-
-- **KYCFlow**: Handles KYC verification and receiver creation
-- **ConversionCard**: UI for currency conversion inputs
-- **WalletInfo**: Displays wallet balances and connection status
-- **TransactionHistory**: Shows conversion history
-
-### Backend API Routes
-
-- **`/api/receivers`**: Manages BlindPay receiver creation and TOS acceptance
-- **`/api/payin`**: Handles fiat-to-stablecoin conversions
-- **`/api/convert`**: Manages stablecoin-to-fiat conversions
-- **`/api/banking-details`**: Provides banking information for payins
-
-### Key Integrations
-
-- **Dynamic Labs**: Wallet connection and user metadata management
-- **BlindPay API**: Conversion quotes, execution, and banking details
-- **Wagmi/Viem**: Blockchain interactions and token approvals
-
-## 🔧 Development
-
-### Adding New Currencies
-
-1. Update `config.currencies` in `src/lib/config.ts`
-2. Add token mapping in `config.tokenMapping`
-3. Update conversion logic in API routes
-
-### Customizing KYC Flow
-
-1. Modify the `KYCFlow` component in `src/components/KYCFlow.tsx`
-2. Update the receivers API route for additional KYC fields
-3. Add validation and error handling as needed
-
-### Environment Variables
-
-All configuration is done through environment variables to ensure:
-
-- No hardcoded values in production
-- Easy configuration management
-- Secure credential handling
-
-## 🚨 Important Notes
-
-- **KYC Required**: Users must complete KYC verification before using BlindPay services
-- **Receiver ID Storage**: Receiver IDs are automatically stored in Dynamic user metadata
-- **No Local Storage**: Sensitive KYC data is not stored locally
-- **Development Mode**: Uses placeholder KYC data for development (configure via env vars)
-
-## 📚 Resources
-
-- [BlindPay API Documentation](https://docs.blindpay.com)
-- [Dynamic Labs Documentation](https://docs.dynamic.xyz)
-- [Wagmi Documentation](https://wagmi.sh)
-- [Viem Documentation](https://viem.sh)
+- Clean, maintainable code structure
+- Proper separation of concerns
+- Reusable components and hooks
+- Simplified state management
+- Production-ready patterns without over-engineering

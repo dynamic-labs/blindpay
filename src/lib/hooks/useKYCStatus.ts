@@ -1,6 +1,9 @@
 import { useDynamicContext } from "@/lib/dynamic";
 import { useState, useEffect } from "react";
-import { useUserUpdateRequest } from "@dynamic-labs/sdk-react-core";
+import {
+  useRefreshUser,
+  useUserUpdateRequest,
+} from "@dynamic-labs/sdk-react-core";
 
 interface UserMetadata {
   blindpayReceiverId?: string;
@@ -11,33 +14,52 @@ interface UserMetadata {
 export function useKYCStatus() {
   const { user, primaryWallet } = useDynamicContext();
   const { updateUser } = useUserUpdateRequest();
+  const refreshUser = useRefreshUser();
   const [receiverId, setReceiverId] = useState<string | null>(null);
   const [bankingId, setBankingId] = useState<string | null>(null);
   const [isKYCComplete, setIsKYCComplete] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (user && user.metadata) {
-      const metadata = user.metadata as UserMetadata;
-      const blindpayReceiverId = metadata.blindpayReceiverId;
-      const blindpayBankingId = metadata.blindpayBankingId;
+    const checkAndRefreshUser = async () => {
+      if (user && user.metadata) {
+        const metadata = user.metadata as UserMetadata;
+        const blindpayReceiverId = metadata.blindpayReceiverId;
+        const blindpayBankingId = metadata.blindpayBankingId;
 
-      if (blindpayReceiverId) {
-        setReceiverId(blindpayReceiverId);
-        setIsKYCComplete(true);
+        if (blindpayReceiverId) {
+          setReceiverId(blindpayReceiverId);
+          setIsKYCComplete(true);
+        } else {
+          setIsKYCComplete(false);
+          // Refresh user if there's no receiver ID to get latest metadata
+          try {
+            await refreshUser();
+          } catch (error) {
+            console.warn("Failed to refresh user:", error);
+          }
+        }
+
+        if (blindpayBankingId) {
+          setBankingId(blindpayBankingId);
+        }
       } else {
         setIsKYCComplete(false);
+        // Refresh user if there's no user or metadata
+        if (user) {
+          try {
+            await refreshUser();
+          } catch (error) {
+            console.warn("Failed to refresh user:", error);
+          }
+        }
       }
 
-      if (blindpayBankingId) {
-        setBankingId(blindpayBankingId);
-      }
-    } else {
-      setIsKYCComplete(false);
-    }
+      setIsLoading(false);
+    };
 
-    setIsLoading(false);
-  }, [user]);
+    checkAndRefreshUser();
+  }, [user, refreshUser]);
 
   const checkReceiverExists = async (): Promise<boolean> => {
     if (!user?.email) return false;

@@ -1,13 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { config } from "@/lib/config";
 import {
-  BlindPayPayinQuote,
-  BlindPayPayin,
-  BlindPayReceiver,
-  BlindPayBlockchainWallet,
+  StablePayPayinQuote,
+  StablePayPayin,
   PayinStep,
   Network,
+  BlindPayBlockchainWallet,
 } from "@/types";
+
+interface PayinQuoteBody {
+  blockchain_wallet_id: string;
+  currency_type: string;
+  cover_fees: boolean;
+  request_amount: number;
+  payment_method: string;
+  token: string;
+  payer_rules?: Record<string, unknown>;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,12 +27,11 @@ export async function POST(request: NextRequest) {
       walletAddress,
       quoteId,
       receiverId,
-      email,
-      first_name,
-      last_name,
+
       paymentMethod,
       token,
       network,
+      blockchainWalletId, // New parameter for wallet selection from frontend
     } = body;
 
     if (!step) {
@@ -93,40 +101,31 @@ export async function POST(request: NextRequest) {
     }
 
     if (step === PayinStep.CREATE_QUOTE) {
-      if (!amount || !receiverId) {
-        return NextResponse.json({ error: "Bad Request" }, { status: 400 });
-      }
-
-      const walletsResponse = await fetch(
-        `${baseUrl}/receivers/${receiverId}/blockchain-wallets`,
-        {
-          method: "GET",
-          headers,
-        }
-      );
-
-      if (!walletsResponse.ok) {
+      if (!amount || !receiverId || !blockchainWalletId) {
         return NextResponse.json(
-          { error: "Failed to fetch receiver wallets" },
-          { status: walletsResponse.status }
+          {
+            error:
+              "Bad Request: amount, receiverId, and blockchainWalletId are required",
+          },
+          { status: 400 }
         );
       }
 
-      const walletsData = await walletsResponse.json();
-      const blockchainWallet = walletsData.data?.[0];
-
-      if (!blockchainWallet) {
-        return NextResponse.json({ error: "Bad Request" }, { status: 400 });
-      }
-
-      const quoteBody = {
-        blockchain_wallet_id: blockchainWallet.id,
+      // Use the blockchainWalletId from the frontend instead of fetching
+      const quoteBody: PayinQuoteBody = {
+        blockchain_wallet_id: blockchainWalletId,
         currency_type: "sender",
-        cover_fees: false,
-        request_amount: amount * 100,
-        payment_method: paymentMethod,
-        token: token,
+        cover_fees: config.blindpayDefaults.coverFees,
+        request_amount: Math.round(amount * 100), // Convert to cents
+        payment_method: paymentMethod || config.blindpayDefaults.paymentMethod,
+        token: token || config.blindpayDefaults.stablecoinToken,
       };
+
+      // Add payer rules if needed (for PIX and other specific payment methods)
+      if (paymentMethod === "pix") {
+        // You can add specific PIX payer rules here if needed
+        // quoteBody.payer_rules = { pix_allowed_tax_ids: ['...'] };
+      }
 
       const quoteResponse = await fetch(`${baseUrl}/payin-quotes`, {
         method: "POST",
@@ -142,13 +141,13 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const quoteData: BlindPayPayinQuote = await quoteResponse.json();
+      const quoteData: StablePayPayinQuote = await quoteResponse.json();
 
       return NextResponse.json({
         success: true,
         step: "quote_created",
         quote: quoteData,
-        blockchainWalletId: blockchainWallet.id,
+        blockchainWalletId: blockchainWalletId,
       });
     }
 
@@ -175,7 +174,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const payinData: BlindPayPayin = await payinResponse.json();
+      const payinData: StablePayPayin = await payinResponse.json();
 
       return NextResponse.json({
         success: true,
@@ -231,7 +230,7 @@ export async function GET(request: NextRequest) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`BlindPay API error: ${response.status} - ${errorText}`);
+      throw new Error(`API error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
